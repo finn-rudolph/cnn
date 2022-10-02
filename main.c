@@ -32,15 +32,19 @@ int main(int argc, char **argv)
     {
         size_t l, m;
         double a, b;
+        char name[100];
+        memset(name, 0, 100);
         printf("Number of layers: ");
         scanf("%zu", &l);
         printf("Kernel size: ");
         scanf("%zu", &m);
         printf("Parameter initialization bounds: ");
         scanf("%lg %lg", &a, &b);
+        printf("Network name: ");
+        scanf("%s", name);
 
         network z = network_init(l, m, a, b);
-        network_save(&z, "net.txt");
+        network_save(&z, name);
         network_destroy(&z);
     }
     }
