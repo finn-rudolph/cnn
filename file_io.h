@@ -10,10 +10,10 @@ typedef struct example example;
 struct example
 {
     uint8_t *z;
-    unsigned d;
+    uint8_t d;
 };
 
-example *read_range(char *filename, size_t i, size_t j);
+example *read_range(char *image_file, char *label_file, size_t i, size_t j);
 
 static inline void reverse16(uint16_t *x)
 {
