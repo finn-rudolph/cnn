@@ -62,4 +62,19 @@ void padding_avg(conv_layer const *const y, double *const out)
 
 void padding_zero(conv_layer const *const y, double *out)
 {
+    size_t const s = y->m / 2, n = y->n + 2 * s;
+
+    for (size_t k = 0; k < s; k++)
+    {
+        for (size_t j = s - k; j < y->n + k; j++)
+            out[(s - k - 1) * n + j] = out[(y->n + k + 1) * n + j] = 0.0;
+
+        for (size_t i = s - k; i < y->n + k; i++)
+            out[i * n + s - k - 1] = out[i * n + y->n + k + 1] = 0;
+
+        out[(s - k - 1) * n + s - k - 1] =
+            out[(s - k - 1) * n + y->n + k + 1] =
+                out[(y->n + k + 1) * n + s - k - 1] =
+                    out[(y->n + k + 1) * n + y->n + k + 1] = 0;
+    }
 }
