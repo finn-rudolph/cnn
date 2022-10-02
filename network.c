@@ -1,9 +1,8 @@
-#include "network.h"
-
 #include <stdlib.h>
 #include <stdio.h>
 
-#define SQUARE(x) (x * x)
+#include "network.h"
+#include "util.h"
 
 network network_init(size_t l, size_t m, double a, double b)
 {
@@ -35,6 +34,8 @@ network network_init(size_t l, size_t m, double a, double b)
         z.layers[l - 1].fc.weight[i] = rand_double(a, b);
     for (size_t i = 0; i < 10; i++)
         z.layers[l - 1].fc.bias[i] = rand_double(a, b);
+
+    return z;
 }
 
 void network_destroy(network *z)
@@ -72,7 +73,7 @@ void network_save(network *z, char *fname)
     fprintf(file, "%zu\n", z->l);
     for (size_t i = 0; i < z->l; i++)
     {
-        fprintf("%d\n", z->layers[i].conv.layer_type);
+        fprintf(file, "%d\n", z->layers[i].conv.layer_type);
 
         switch (z->layers[i].conv.layer_type)
         {
@@ -81,8 +82,8 @@ void network_save(network *z, char *fname)
             fprintf(file, "%zu %zu\n%g\n", z->layers[i].conv.n,
                     z->layers[i].conv.m, z->layers[i].conv.bias);
 
-            for (size_t i = 0; i < SQUARE(z->layers[i].conv.m); i++)
-                fprintf(file, "%g ", z->layers[i].conv.kernel[i]);
+            for (size_t j = 0; j < SQUARE(z->layers[i].conv.m); j++)
+                fprintf(file, "%g ", z->layers[i].conv.kernel[j]);
             fputc('\n', file);
 
             break;
@@ -91,14 +92,16 @@ void network_save(network *z, char *fname)
         {
             fprintf(file, "%zu\n", z->layers[i].fc.n);
 
-            for (size_t i = 0; i < z->layers[i].fc.p; i++)
-                fprintf(file, "%g ", z->layers[i].fc.weight[i]);
-            for (size_t i = 0; i < z->layers[i].fc.n; i++)
-                fprintf(file, "%g ", z->layers[i].fc.bias[i]);
+            for (size_t j = 0; j < z->layers[i].fc.p; j++)
+                fprintf(file, "%g ", z->layers[i].fc.weight[j]);
+            for (size_t j = 0; j < z->layers[i].fc.n; j++)
+                fprintf(file, "%g ", z->layers[i].fc.bias[j]);
             fputc('\n', file);
 
             break;
         }
         }
     }
+
+    fclose(file);
 }
