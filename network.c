@@ -30,15 +30,15 @@ network network_init(size_t l, size_t m, double a, double b)
         .weight = malloc(SQUARE(z.layers[l - 2].conv.n) * 10 * sizeof(double)),
         .bias = malloc(10 * sizeof(double))};
 
-    for (size_t i = 0; i < z.layers[l - 1].fc.p; i++)
-        z.layers[l - 1].fc.weight[i] = rand_double(a, b);
-    for (size_t i = 0; i < 10; i++)
-        z.layers[l - 1].fc.bias[i] = rand_double(a, b);
+    for (size_t j = 0; j < z.layers[l - 1].fc.p; j++)
+        z.layers[l - 1].fc.weight[j] = rand_double(a, b);
+    for (size_t j = 0; j < z.layers[l - 1].fc.n; j++)
+        z.layers[l - 1].fc.bias[j] = rand_double(a, b);
 
     return z;
 }
 
-void network_destroy(network *z)
+void network_destroy(network *const z)
 {
     for (size_t i = 0; i < z->l; i++)
     {
@@ -61,7 +61,7 @@ void network_destroy(network *z)
     free(z->layers);
 }
 
-network network_read(char *fname)
+network network_read(char const *const fname)
 {
     network z;
     FILE *file = fopen(fname, "r");
@@ -94,7 +94,7 @@ network network_read(char *fname)
         case TYPE_FC:
         {
             fscanf(file, "%zu", &ly->fc.n);
-            ly->fc.p = ly->fc.n * SQUARE((ly - 1)->conv.m);
+            ly->fc.p = ly->fc.n * SQUARE((ly - 1)->conv.n);
             ly->fc.weight = malloc(ly->fc.p * sizeof(double));
             ly->fc.bias = malloc(ly->fc.n * sizeof(double));
 
@@ -111,7 +111,7 @@ network network_read(char *fname)
     return z;
 }
 
-void network_save(network *z, char *fname)
+void network_save(network const *const z, char const *const fname)
 {
     FILE *file = fopen(fname, "w");
     if (!file)

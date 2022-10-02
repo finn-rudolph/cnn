@@ -12,10 +12,10 @@ struct network
 
 network network_init(size_t l, size_t m, double a, double b);
 
-void network_destroy(network *z);
+void network_destroy(network *const z);
 
-network network_read(char *fname);
+network network_read(char const *const fname);
 
-void network_save(network *z, char *fname);
+void network_save(network const *const z, char const *const fname);
 
 #endif

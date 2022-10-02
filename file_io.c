@@ -1,16 +1,17 @@
 #include "file_io.h"
 
 // Reads all examples in [i, j)
-example *read_range(char *image_file, char *label_file, size_t i, size_t j)
+example *read_range(char const *const image_fname, char const *const label_fname,
+                    size_t i, size_t j)
 {
     assert(i <= j);
-    FILE *image_f = fopen(image_file, "rb");
+    FILE *image_f = fopen(image_fname, "rb");
     if (!image_f)
     {
         perror("Error on opening image file");
         return 0;
     }
-    FILE *label_f = fopen(label_file, "rb");
+    FILE *label_f = fopen(label_fname, "rb");
     if (!label_f)
     {
         perror("Error on opening label file");
