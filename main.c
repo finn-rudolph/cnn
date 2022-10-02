@@ -1,12 +1,43 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "file_io.h"
+#include "network.h"
 
-int main()
+enum action
 {
-    example *e = read_range("train-images.idx3-ubyte", "train-labels.idx1-ubyte", 0, 1);
-    for (size_t i = 0; i < 28 * 28; i++)
-        printf("%u\n", (unsigned)e[0].z[i]);
+    INIT_NET
+};
 
-    printf("Digit: %u", (unsigned)e[0].d);
+_Noreturn void print_help()
+{
+    printf("Please specify an action.\n");
+    exit(EXIT_SUCCESS);
+}
+
+int main(int argc, char **argv)
+{
+    if (argc == 1)
+        print_help();
+
+    enum action ac;
+    if (!strcmp(argv[1], "init"))
+        ac = INIT_NET;
+    else
+        print_help();
+
+    switch (ac)
+    {
+    case INIT_NET:
+    {
+        size_t l, m;
+        double a, b;
+        printf("Number of layers: ");
+        scanf("%zu", l);
+        printf("Kernel size: ");
+        scanf("%zu", m);
+        printf("Parameter initialization bounds: ");
+        scanf("%g %g", a, b);
+    }
+    }
 }
