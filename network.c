@@ -61,6 +61,56 @@ void network_destroy(network *z)
     free(z->layers);
 }
 
+network network_read(char *fname)
+{
+    network z;
+    FILE *file = fopen(fname, "r");
+    if (!file)
+    {
+        perror("Error while reading network from file");
+        return z;
+    }
+
+    fscanf(file, "%zu", &z.l);
+    z.layers = malloc(z.l * sizeof(layer));
+
+    for (size_t i = 0; i < z.l; i++)
+    {
+        layer *ly = z.layers + i;
+
+        fscanf(file, "%hhu", &ly->conv.layer_type);
+        switch (ly->conv.layer_type)
+        {
+        case TYPE_CONV:
+        {
+            fscanf(file, "%zu %zu %lg", &ly->conv.n, &ly->conv.m, &ly->conv.bias);
+
+            ly->conv.kernel = malloc(SQUARE(ly->conv.m) * sizeof(double));
+            for (size_t j = 0; j < SQUARE(ly->conv.m); j++)
+                fscanf(file, "%lg", &ly->conv.kernel[j]);
+
+            break;
+        }
+        case TYPE_FC:
+        {
+            fscanf(file, "%zu", &ly->fc.n);
+            ly->fc.p = ly->fc.n * SQUARE((ly - 1)->conv.m);
+            ly->fc.weight = malloc(ly->fc.p * sizeof(double));
+            ly->fc.bias = malloc(ly->fc.n * sizeof(double));
+
+            for (size_t j = 0; j < ly->fc.p; j++)
+                fscanf(file, "%lg", &ly->fc.weight[j]);
+            for (size_t j = 0; j < ly->fc.n; j++)
+                fscanf(file, "%lg", &ly->fc.bias[j]);
+
+            break;
+        }
+        }
+    }
+
+    return z;
+}
+
 void network_save(network *z, char *fname)
 {
     FILE *file = fopen(fname, "w");
@@ -73,29 +123,32 @@ void network_save(network *z, char *fname)
     fprintf(file, "%zu\n", z->l);
     for (size_t i = 0; i < z->l; i++)
     {
-        fprintf(file, "%d\n", z->layers[i].conv.layer_type);
+        layer *ly = z->layers + i;
 
-        switch (z->layers[i].conv.layer_type)
+        fprintf(file, "%hhu\n", ly->conv.layer_type);
+
+        switch (ly->conv.layer_type)
         {
         case TYPE_CONV:
         {
-            fprintf(file, "%zu %zu\n%g\n", z->layers[i].conv.n,
-                    z->layers[i].conv.m, z->layers[i].conv.bias);
+            fprintf(file, "%zu %zu\n%lg\n", ly->conv.n, ly->conv.m, ly->conv.bias);
 
-            for (size_t j = 0; j < SQUARE(z->layers[i].conv.m); j++)
-                fprintf(file, "%g ", z->layers[i].conv.kernel[j]);
+            for (size_t j = 0; j < SQUARE(ly->conv.m); j++)
+                fprintf(file, "%lg ", ly->conv.kernel[j]);
             fputc('\n', file);
 
             break;
         }
         case TYPE_FC:
         {
-            fprintf(file, "%zu\n", z->layers[i].fc.n);
+            fprintf(file, "%zu\n", ly->fc.n);
 
-            for (size_t j = 0; j < z->layers[i].fc.p; j++)
-                fprintf(file, "%g ", z->layers[i].fc.weight[j]);
-            for (size_t j = 0; j < z->layers[i].fc.n; j++)
-                fprintf(file, "%g ", z->layers[i].fc.bias[j]);
+            for (size_t j = 0; j < ly->fc.p; j++)
+                fprintf(file, "%lg ", ly->fc.weight[j]);
+            fputc('\n', file);
+
+            for (size_t j = 0; j < ly->fc.n; j++)
+                fprintf(file, "%lg ", ly->fc.bias[j]);
             fputc('\n', file);
 
             break;

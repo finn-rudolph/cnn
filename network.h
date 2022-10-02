@@ -14,6 +14,8 @@ network network_init(size_t l, size_t m, double a, double b);
 
 void network_destroy(network *z);
 
+network network_read(char *fname);
+
 void network_save(network *z, char *fname);
 
 #endif
