@@ -11,7 +11,7 @@ network network_init(size_t num_layers, size_t kernel_size, double a, double b)
     net.l = num_layers;
     net.layers = malloc((num_layers + 1) * sizeof(layer));
 
-    input_layer_init(&net.layers[0], 28);
+    input_layer_init(&net.layers[0].input, 28);
 
     for (size_t i = 1; i < num_layers; i++)
     {
@@ -201,7 +201,7 @@ double *network_feed_forward(network const *const net, example const *const e)
         v[i] = malloc(28 * sizeof(double));
     }
 
-    input_layer_pass(&net->layers[0].inp, e, v, net->layers[1].conv.k);
+    input_layer_pass(&net->layers[0].input, e, v, net->layers[1].conv.k);
 
     for (size_t i = 1; i < net->l; i++)
     {

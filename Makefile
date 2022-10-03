@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -g
+CFLAGS = -Wall -g -lm
 BINS = main.o file_io.o layer.o network.o convolution.o util.o
 
 all: $(BINS)

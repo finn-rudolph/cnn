@@ -43,7 +43,7 @@ union layer
 {
     conv_layer conv;
     fc_layer fc;
-    input_layer inp;
+    input_layer input;
 };
 
 void input_layer_init(input_layer *const x, size_t n);
@@ -61,13 +61,13 @@ void input_layer_pass(
     double *const *const out, size_t padding);
 
 void conv_layer_pass(
-    conv_layer const *const x, double const *const *const in,
+    conv_layer const *const x, double *const *const in,
     double *const *const out);
 
 void fc_layer_pass(
-    fc_layer const *const x, double const *const in, double *const out);
+    fc_layer const *const x, double *const in, double *const out);
 
 void vectorize_matrix(
-    size_t n, size_t m, double const *const *const matrix, double *const vector);
+    size_t n, size_t m, double *const *const matrix, double *const vector);
 
 #endif

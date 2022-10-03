@@ -4,7 +4,7 @@
 #include <stddef.h>
 
 void convolve(
-    size_t n, size_t m, double const *const *const in,
-    double *const *const out, double *const *const kernel);
+    size_t n, size_t m, double *const *const in, double *const *const out,
+    double *const *const kernel);
 
 #endif

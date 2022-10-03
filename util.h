@@ -12,13 +12,27 @@ static inline double rand_double(double a, double b)
     return a + (rand() / (RAND_MAX / (b - a)));
 }
 
-// x and y must be pointers to the base type.
-static inline void swap(void *x, void *y)
+static inline void swap_dp(double **x, double **y)
 {
-    *x ^= *y;
-    *y ^= *x;
-    *x ^= *y;
+    double *z = *x;
+    *x = *y;
+    *y = z;
 }
+
+static inline void swap_dpp(double ***x, double ***y)
+{
+    double **z = *x;
+    *x = *y;
+    *y = z;
+}
+
+// x and y must be pointers to the base type.
+#define swap(x, y)        \
+    _Generic(x,           \
+             double **    \
+             : swap_dp,   \
+               double *** \
+             : swap_dpp)(x, y)
 
 static inline void rev_uint16(uint16_t *x)
 {
@@ -43,10 +57,10 @@ static inline void rev_uint32(uint32_t *x)
                uint32_t *  \
              : rev_uint32)(x)
 
-// Needs a row vector of length m.
+// in must be a row vector of length m.
 void mul_matrix_vector(
     size_t n, size_t m, double const *const in,
-    double const *const *const matrix, double *const out);
+    double *const *const matrix, double *const out);
 
 // Suffix _d means derivative.
 
@@ -74,9 +88,13 @@ static inline void softmax(size_t n, double *const in)
 {
     double sum = 0.0;
     for (size_t i = 0; i < n; i++)
+    {
         sum += exp(in[i]);
+    }
     for (size_t i = 0; i < n; i++)
+    {
         in[i] = exp(in[i]) / sum;
+    }
 }
 
 #endif
