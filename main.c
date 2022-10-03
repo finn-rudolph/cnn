@@ -32,23 +32,20 @@ int main(int argc, char **argv)
     {
     case INIT_NET:
     {
-        size_t l, m;
-        double a, b;
+        size_t num_layers, kernel_size;
         char name[100];
         memset(name, 0, 100);
 
         printf("Number of layers: ");
-        scanf("%zu", &l);
+        scanf("%zu", &num_layers);
         printf("Kernel size: ");
-        scanf("%zu", &m);
-        printf("Parameter initialization bounds: ");
-        scanf("%lg %lg", &a, &b);
+        scanf("%zu", &kernel_size);
         printf("Network name: ");
         scanf("%s", name);
 
-        network z = network_init(l, m, a, b);
-        network_save(&z, name);
-        network_destroy(&z);
+        network net = network_init(num_layers, kernel_size);
+        network_save(&net, name);
+        network_destroy(&net);
     }
     }
 }

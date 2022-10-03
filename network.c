@@ -5,7 +5,10 @@
 #include "network.h"
 #include "util.h"
 
-network network_init(size_t num_layers, size_t kernel_size, double a, double b)
+#define PARAM_MIN 0.0
+#define PARAM_MAX 10.0
+
+network network_init(size_t num_layers, size_t kernel_size)
 {
     network net;
     net.l = num_layers;
@@ -17,30 +20,32 @@ network network_init(size_t num_layers, size_t kernel_size, double a, double b)
     {
         layer *x = net.layers + i;
         conv_layer_init(&x->conv, 28, kernel_size);
-        x->conv.bias = rand_double(a, b);
+        x->conv.bias = rand_double(PARAM_MIN, PARAM_MAX);
 
         for (size_t j = 0; j < kernel_size; j++)
         {
             for (size_t k = 0; k < kernel_size; k++)
             {
-                x->conv.kernel[j][k] = rand_double(a, b);
+                x->conv.kernel[j][k] = rand_double(PARAM_MAX, PARAM_MAX);
             }
         }
     }
 
-    fc_layer_init(&net.layers[net.l - 1].fc, 10, SQUARE(net.layers[net.l - 2].conv.n));
+    fc_layer_init(&net.layers[net.l - 1].fc, 10,
+                  SQUARE(net.layers[net.l - 2].conv.n));
 
     for (size_t j = 0; j < net.layers[net.l - 1].fc.n; j++)
     {
         for (size_t k = 0; k < net.layers[net.l - 1].fc.m; k++)
         {
-            net.layers[net.l - 1].fc.weight[j][k] = rand_double(a, b);
+            net.layers[net.l - 1].fc.weight[j][k] =
+                rand_double(PARAM_MIN, PARAM_MAX);
         }
     }
 
     for (size_t j = 0; j < net.layers[net.l - 1].fc.n; j++)
     {
-        net.layers[net.l - 1].fc.bias[j] = rand_double(a, b);
+        net.layers[net.l - 1].fc.bias[j] = rand_double(PARAM_MIN, PARAM_MAX);
     }
 
     return net;
