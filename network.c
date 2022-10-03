@@ -9,7 +9,7 @@ network network_init(size_t l, size_t k, double a, double b)
 {
     network net;
     net.l = l;
-    net.layers = malloc(l * sizeof(layer));
+    net.layers = malloc((l + 1) * sizeof(layer));
 
     for (size_t i = 0; i < l - 1; i++)
     {
@@ -58,11 +58,15 @@ void network_destroy(network *const net)
         {
         case LTYPE_CONV:
         {
+            for (size_t j = 0; j < x->conv.k; j++)
+                free(x->conv.kernel[j]);
             free(x->conv.kernel);
             break;
         }
         case LTYPE_FC:
         {
+            for (size_t j = 0; j < x->fc.n; j++)
+                free(x->fc.weight[j]);
             free(x->fc.weight);
             free(x->fc.bias);
             break;
@@ -183,8 +187,55 @@ void network_save(network const *const net, char const *const fname)
 
 double *network_feed_forward(network const *const net, example const *const e)
 {
-    double *u = malloc(SQUARE(28) * sizeof(double)),
-           *v = malloc(SQUARE(28) * sizeof(double));
+    // Two grid containers for convolutional layers, two linear containers for
+    // fully connected layers. Serve as input / output buffer.
+    double **u = malloc(28 * sizeof(double *)),
+           **v = malloc(28 * sizeof(double *)),
+           *p = malloc(SQUARE(28) * sizeof(double)),
+           *q = malloc(SQUARE(28) * sizeof(double));
 
-    memcpy(u, e, SQUARE(28) * sizeof(double));
+    for (size_t i = 0; i < 28; i++)
+    {
+        u[i] = malloc(28 * sizeof(double));
+        v[i] = malloc(28 * sizeof(double));
+    }
+
+    input_layer_pass(&net->layers[0].inp, e, v, net->layers[1].conv.k);
+
+    for (size_t i = 1; i < net->l; i++)
+    {
+        layer *x = net->layers + i;
+        switch (x->conv.ltype)
+        {
+        case LTYPE_CONV:
+        {
+            conv_layer_pass(&x->conv, u, v);
+            swap(&u, &v);
+            break;
+        }
+        case LTYPE_FC:
+        {
+            if ((x - 1)->conv.ltype != LTYPE_FC)
+                // After the first fully connected layer, only such layers come,
+                // therefore switch to vectors instead of matrices.
+                vectorize_matrix(x->fc.n, x->fc.m, u, p);
+            fc_layer_pass(&net->layers[i].fc, p, q);
+            swap(&p, &q);
+        }
+        }
+    }
+
+    double *result = malloc(10 * sizeof(double));
+    memcpy(result, p, 10 * sizeof(double));
+
+    for (size_t i = 0; i < 28; i++)
+    {
+        free(v[i]);
+        free(u[i]);
+    }
+    free(v);
+    free(u);
+    free(p);
+    free(q);
+    return result;
 }
