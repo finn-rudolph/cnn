@@ -144,6 +144,84 @@ void fc_layer_pass(
     softmax(x->n, out);
 }
 
+void input_layer_read(input_layer *const x, FILE *const net_f)
+{
+    fscanf(net_f, "%zu", &x->n);
+    input_layer_init(x, x->n);
+}
+
+void conv_layer_read(conv_layer *const x, FILE *const net_f)
+{
+    fscanf(net_f, "%zu %zu %lg", &x->n, &x->k, &x->bias);
+    conv_layer_init(x, x->n, x->k);
+
+    for (size_t i = 0; i < x->k; i++)
+    {
+        for (size_t j = 0; j < x->k; j++)
+        {
+            fscanf(net_f, "%lg", &x->kernel[i][j]);
+        }
+    }
+}
+
+void fc_layer_read(fc_layer *const x, FILE *const net_f)
+{
+    fscanf(net_f, "%zu %zu", &x->n, &x->m);
+    fc_layer_init(x, x->n, x->m);
+
+    for (size_t i = 0; i < x->n; i++)
+    {
+        for (size_t j = 0; j < x->m; j++)
+        {
+            fscanf(net_f, "%lg", &x->weight[i][j]);
+        }
+    }
+
+    for (size_t i = 0; i < x->n; i++)
+    {
+        fscanf(net_f, "%lg", &x->bias[i]);
+    }
+}
+
+void input_layer_save(input_layer const *const x, FILE *const net_f)
+{
+    fprintf(net_f, "%zu\n", x->n);
+}
+
+void conv_layer_save(conv_layer const *const x, FILE *const net_f)
+{
+    fprintf(net_f, "%zu %zu\n%lg\n", x->n, x->k, x->bias);
+
+    for (size_t i = 0; i < x->k; i++)
+    {
+        for (size_t j = 0; j < x->k; j++)
+        {
+            fprintf(net_f, "%lg ", x->kernel[i][j]);
+        }
+    }
+    fputc('\n', net_f);
+}
+
+void fc_layer_save(fc_layer const *const x, FILE *const net_f)
+{
+    fprintf(net_f, "%zu %zu\n", x->n, x->m);
+
+    for (size_t i = 0; i < x->n; i++)
+    {
+        for (size_t j = 0; j < x->m; j++)
+        {
+            fprintf(net_f, "%lg ", x->weight[i][j]);
+        }
+    }
+    fputc('\n', net_f);
+
+    for (size_t i = 0; i < x->n; i++)
+    {
+        fprintf(net_f, "%lg ", x->bias[i]);
+    }
+    fputc('\n', net_f);
+}
+
 void vectorize_matrix(
     size_t n, size_t m, double *const *const matrix, double *const vector)
 {

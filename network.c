@@ -88,43 +88,20 @@ network network_read(char const *const fname)
         layer *x = net.layers + i;
 
         fscanf(net_f, "%d", &x->conv.ltype);
+
         switch (x->conv.ltype)
         {
+        case LTYPE_INPUT:
+            input_layer_read(&x->input, net_f);
+            break;
+
         case LTYPE_CONV:
-        {
-            fscanf(net_f, "%zu %zu %lg", &x->conv.n, &x->conv.k, &x->conv.bias);
-            conv_layer_init(&x->conv, x->conv.n, x->conv.k);
-
-            for (size_t j = 0; j < x->conv.k; j++)
-            {
-                for (size_t k = 0; k < x->conv.k; k++)
-                {
-                    fscanf(net_f, "%lg", &x->conv.kernel[j][k]);
-                }
-            }
-
+            conv_layer_read(&x->conv, net_f);
             break;
-        }
+
         case LTYPE_FC:
-        {
-            fscanf(net_f, "%zu %zu", &x->fc.n, &x->fc.m);
-            fc_layer_init(&x->fc, x->fc.n, x->fc.m);
-
-            for (size_t j = 0; j < x->fc.n; j++)
-            {
-                for (size_t k = 0; k < x->fc.m; k++)
-                {
-                    fscanf(net_f, "%lg", &x->fc.weight[j][k]);
-                }
-            }
-
-            for (size_t j = 0; j < x->fc.n; j++)
-            {
-                fscanf(net_f, "%lg", &x->fc.bias[j]);
-            }
-
+            fc_layer_read(&x->fc, net_f);
             break;
-        }
         }
     }
 
@@ -141,6 +118,7 @@ void network_save(network const *const net, char const *const fname)
     }
 
     fprintf(net_f, "%zu\n", net->l);
+
     for (size_t i = 0; i < net->l; i++)
     {
         layer *x = net->layers + i;
@@ -149,42 +127,17 @@ void network_save(network const *const net, char const *const fname)
 
         switch (x->conv.ltype)
         {
+        case LTYPE_INPUT:
+            input_layer_save(&x->input, net_f);
+            break;
+
         case LTYPE_CONV:
-        {
-            fprintf(net_f, "%zu %zu\n%lg\n", x->conv.n, x->conv.k, x->conv.bias);
-
-            for (size_t j = 0; j < x->conv.k; j++)
-            {
-                for (size_t k = 0; k < x->conv.k; k++)
-                {
-                    fprintf(net_f, "%lg ", x->conv.kernel[j][k]);
-                }
-            }
-            fputc('\n', net_f);
-
+            conv_layer_save(&x->conv, net_f);
             break;
-        }
+
         case LTYPE_FC:
-        {
-            fprintf(net_f, "%zu %zu\n", x->fc.n, x->fc.m);
-
-            for (size_t j = 0; j < x->fc.n; j++)
-            {
-                for (size_t k = 0; k < x->fc.m; k++)
-                {
-                    fprintf(net_f, "%lg ", x->fc.weight[j][k]);
-                }
-            }
-            fputc('\n', net_f);
-
-            for (size_t j = 0; j < x->fc.n; j++)
-            {
-                fprintf(net_f, "%lg ", x->fc.bias[j]);
-            }
-            fputc('\n', net_f);
-
+            fc_layer_save(&x->fc, net_f);
             break;
-        }
         }
     }
 

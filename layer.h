@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdio.h>
 
 #include "file_io.h"
 
@@ -66,6 +67,18 @@ void conv_layer_pass(
 
 void fc_layer_pass(
     fc_layer const *const x, double *const in, double *const out);
+
+void input_layer_read(input_layer *const x, FILE *const net_f);
+
+void conv_layer_read(conv_layer *const x, FILE *const net_f);
+
+void fc_layer_read(fc_layer *const x, FILE *const net_f);
+
+void input_layer_save(input_layer const *const x, FILE *const net_f);
+
+void conv_layer_save(conv_layer const *const x, FILE *const net_f);
+
+void fc_layer_save(fc_layer const *const x, FILE *const net_f);
 
 void vectorize_matrix(
     size_t n, size_t m, double *const *const matrix, double *const vector);
