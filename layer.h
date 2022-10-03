@@ -46,13 +46,23 @@ union layer
     input_layer inp;
 };
 
-void conv_layer_pass(
-    conv_layer const *const x, double const *const *const in,
-    double *const *const out);
+void input_layer_init(input_layer *const x, size_t n);
+
+void conv_layer_init(conv_layer *const x, size_t n, size_t k);
+
+void fc_layer_init(fc_layer *const x, size_t n, size_t m);
+
+void conv_layer_destroy(conv_layer *const x);
+
+void fc_layer_destroy(fc_layer *const);
 
 void input_layer_pass(
     input_layer const *const x, example const *const e,
     double *const *const out, size_t padding);
+
+void conv_layer_pass(
+    conv_layer const *const x, double const *const *const in,
+    double *const *const out);
 
 void fc_layer_pass(
     fc_layer const *const x, double const *const in, double *const out);

@@ -51,26 +51,17 @@ network network_init(size_t l, size_t k, double a, double b)
 
 void network_destroy(network *const net)
 {
-    for (size_t i = 0; i < net->l; i++)
+    for (size_t i = 1; i < net->l; i++)
     {
         layer *x = net->layers + i;
         switch (x->conv.ltype)
         {
         case LTYPE_CONV:
-        {
-            for (size_t j = 0; j < x->conv.k; j++)
-                free(x->conv.kernel[j]);
-            free(x->conv.kernel);
+            conv_layer_destroy(&x->conv);
             break;
-        }
         case LTYPE_FC:
-        {
-            for (size_t j = 0; j < x->fc.n; j++)
-                free(x->fc.weight[j]);
-            free(x->fc.weight);
-            free(x->fc.bias);
+            fc_layer_destroy(&x->fc);
             break;
-        }
         }
     }
 
