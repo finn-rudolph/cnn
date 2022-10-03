@@ -5,46 +5,43 @@
 #include "network.h"
 #include "util.h"
 
-network network_init(size_t l, size_t k, double a, double b)
+network network_init(size_t num_layers, size_t kernel_size, double a, double b)
 {
     network net;
-    net.l = l;
-    net.layers = malloc((l + 1) * sizeof(layer));
+    net.l = num_layers;
+    net.layers = malloc((num_layers + 1) * sizeof(layer));
 
-    for (size_t i = 0; i < l - 1; i++)
+    input_layer_init(&net.layers[0], 28);
+
+    for (size_t i = 1; i < num_layers; i++)
     {
         layer *x = net.layers + i;
+        conv_layer_init(&x->conv, 28, kernel_size);
+        x->conv.bias = rand_double(a, b);
 
-        x->conv = (conv_layer){
-            .ltype = LTYPE_CONV,
-            .n = 28,
-            .k = k,
-            .bias = rand_double(a, b),
-            .kernel = malloc(k * sizeof(double *))};
-
-        for (size_t j = 0; j < k; j++)
+        for (size_t j = 0; j < kernel_size; j++)
         {
-            x->conv.kernel[j] = malloc(k * sizeof(double));
-            for (size_t h = 0; h < k; h++)
-                x->conv.kernel[j][h] = rand_double(a, b);
+            for (size_t k = 0; k < kernel_size; k++)
+            {
+                x->conv.kernel[j][k] = rand_double(a, b);
+            }
         }
     }
 
-    net.layers[l - 1].fc = (fc_layer){
-        .ltype = LTYPE_FC,
-        .n = 10,
-        .m = SQUARE(net.layers[l - 1].conv.n),
-        .weight = malloc(10 * sizeof(double *)),
-        .bias = malloc(10 * sizeof(double))};
+    fc_layer_init(&net.layers[net.l - 1].fc, 10, SQUARE(net.layers[net.l - 2].conv.n));
 
-    for (size_t j = 0; j < net.layers[l - 1].fc.n; j++)
+    for (size_t j = 0; j < net.layers[net.l - 1].fc.n; j++)
     {
-        net.layers[l - 1].fc.weight[j] = malloc(net.layers[l - 1].fc.m * sizeof(double));
-        for (size_t k = 0; k < net.layers[l - 1].fc.m; k++)
-            net.layers[l - 1].fc.weight[j][k] = rand_double(a, b);
+        for (size_t k = 0; k < net.layers[net.l - 1].fc.m; k++)
+        {
+            net.layers[net.l - 1].fc.weight[j][k] = rand_double(a, b);
+        }
     }
-    for (size_t j = 0; j < net.layers[l - 1].fc.n; j++)
-        net.layers[l - 1].fc.bias[j] = rand_double(a, b);
+
+    for (size_t j = 0; j < net.layers[net.l - 1].fc.n; j++)
+    {
+        net.layers[net.l - 1].fc.bias[j] = rand_double(a, b);
+    }
 
     return net;
 }
@@ -91,32 +88,35 @@ network network_read(char const *const fname)
         case LTYPE_CONV:
         {
             fscanf(net_f, "%zu %zu %lg", &x->conv.n, &x->conv.k, &x->conv.bias);
+            conv_layer_init(&x->conv, x->conv.n, x->conv.k);
 
-            x->conv.kernel = malloc(x->conv.k * sizeof(double *));
             for (size_t j = 0; j < x->conv.k; j++)
             {
-                x->conv.kernel[j] = malloc(x->conv.k * sizeof(double));
                 for (size_t k = 0; k < x->conv.k; k++)
+                {
                     fscanf(net_f, "%lg", &x->conv.kernel[j][k]);
+                }
             }
 
             break;
         }
         case LTYPE_FC:
         {
-            fscanf(net_f, "%zu", &x->fc.n);
-            x->fc.m = SQUARE((x - 1)->conv.n);
-            x->fc.weight = malloc(x->fc.n * sizeof(double *));
-            x->fc.bias = malloc(x->fc.n * sizeof(double));
+            fscanf(net_f, "%zu %zu", &x->fc.n, &x->fc.m);
+            fc_layer_init(&x->fc, x->fc.n, x->fc.m);
 
             for (size_t j = 0; j < x->fc.n; j++)
             {
-                x->fc.weight[j] = malloc(x->fc.m * sizeof(double));
                 for (size_t k = 0; k < x->fc.m; k++)
+                {
                     fscanf(net_f, "%lg", &x->fc.weight[j][k]);
+                }
             }
+
             for (size_t j = 0; j < x->fc.n; j++)
+            {
                 fscanf(net_f, "%lg", &x->fc.bias[j]);
+            }
 
             break;
         }
@@ -149,23 +149,33 @@ void network_save(network const *const net, char const *const fname)
             fprintf(net_f, "%zu %zu\n%lg\n", x->conv.n, x->conv.k, x->conv.bias);
 
             for (size_t j = 0; j < x->conv.k; j++)
+            {
                 for (size_t k = 0; k < x->conv.k; k++)
+                {
                     fprintf(net_f, "%lg ", x->conv.kernel[j][k]);
+                }
+            }
             fputc('\n', net_f);
 
             break;
         }
         case LTYPE_FC:
         {
-            fprintf(net_f, "%zu\n", x->fc.n);
+            fprintf(net_f, "%zu %zu\n", x->fc.n, x->fc.m);
 
             for (size_t j = 0; j < x->fc.n; j++)
+            {
                 for (size_t k = 0; k < x->fc.m; k++)
+                {
                     fprintf(net_f, "%lg ", x->fc.weight[j][k]);
+                }
+            }
             fputc('\n', net_f);
 
             for (size_t j = 0; j < x->fc.n; j++)
+            {
                 fprintf(net_f, "%lg ", x->fc.bias[j]);
+            }
             fputc('\n', net_f);
 
             break;
@@ -207,9 +217,11 @@ double *network_feed_forward(network const *const net, example const *const e)
         case LTYPE_FC:
         {
             if ((x - 1)->conv.ltype != LTYPE_FC)
+            {
                 // After the first fully connected layer, only such layers come,
                 // therefore switch to vectors instead of matrices.
                 vectorize_matrix(x->fc.n, x->fc.m, u, p);
+            }
             fc_layer_pass(&net->layers[i].fc, p, q);
             swap(&p, &q);
         }
