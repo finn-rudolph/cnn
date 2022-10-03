@@ -4,11 +4,13 @@
 #include "file_io.h"
 #include "network.h"
 
-enum action
+typedef enum command command;
+enum command
 {
     INIT_NET
 };
 
+// TODO: help command, more information
 _Noreturn void print_help()
 {
     printf("Please specify an action.\n");
@@ -20,13 +22,13 @@ int main(int argc, char **argv)
     if (argc == 1)
         print_help();
 
-    enum action ac;
+    command com;
     if (!strcmp(argv[1], "init"))
-        ac = INIT_NET;
+        com = INIT_NET;
     else
         print_help();
 
-    switch (ac)
+    switch (com)
     {
     case INIT_NET:
     {
@@ -34,6 +36,7 @@ int main(int argc, char **argv)
         double a, b;
         char name[100];
         memset(name, 0, 100);
+
         printf("Number of layers: ");
         scanf("%zu", &l);
         printf("Kernel size: ");

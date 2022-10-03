@@ -1,10 +1,11 @@
 #include "file_io.h"
+#include "util.h"
 
 // Reads all examples in [i, j)
 example *read_range(char const *const image_fname, char const *const label_fname,
-                    size_t i, size_t j)
+                    size_t a, size_t b)
 {
-    assert(i <= j);
+    assert(a <= b);
     FILE *image_f = fopen(image_fname, "rb");
     if (!image_f)
     {
@@ -28,28 +29,28 @@ example *read_range(char const *const image_fname, char const *const label_fname
 
     if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
     {
-        reverseb(&magic_num1);
-        reverseb(&t1);
-        reverseb(&n);
-        reverseb(&m);
-        reverseb(&magic_num2);
-        reverseb(&t2);
+        rev_int(&magic_num1);
+        rev_int(&t1);
+        rev_int(&n);
+        rev_int(&m);
+        rev_int(&magic_num2);
+        rev_int(&t2);
     }
 
     assert(magic_num1 == 2051);
     assert(magic_num2 == 2049);
     assert(t1 == t2);
-    assert(j <= t1);
+    assert(b <= t1);
 
-    example *e = malloc((j - i) * sizeof(example));
-    fseek(image_f, i * n * m, SEEK_CUR);
-    fseek(label_f, i, SEEK_CUR);
+    example *e = malloc((b - a) * sizeof(example));
+    fseek(image_f, a * n * m, SEEK_CUR);
+    fseek(label_f, a, SEEK_CUR);
 
-    for (size_t k = 0; k < (j - i); k++)
+    for (size_t i = 0; i < (b - a); i++)
     {
-        e[k].z = malloc(n * m * sizeof(uint8_t));
-        fread(e[k].z, 1, n * m, image_f);
-        fread(&e[k].d, 1, 1, label_f);
+        e[i].image = malloc(n * m * sizeof(uint8_t));
+        fread(e[i].image, 1, n * m, image_f);
+        fread(&e[i].solution, 1, 1, label_f);
     }
 
     fclose(image_f);

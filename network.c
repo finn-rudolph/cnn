@@ -1,160 +1,190 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <memory.h>
 
 #include "network.h"
 #include "util.h"
 
-network network_init(size_t l, size_t m, double a, double b)
+network network_init(size_t l, size_t k, double a, double b)
 {
-    network z;
-    z.l = l;
-    z.layers = malloc(l * sizeof(layer));
+    network net;
+    net.l = l;
+    net.layers = malloc(l * sizeof(layer));
 
     for (size_t i = 0; i < l - 1; i++)
     {
-        z.layers[i].conv = (conv_layer){
-            .layer_type = TYPE_CONV,
-            .n = 28,
-            .m = m,
-            .bias = rand_double(a, b),
-            .kernel = malloc(m * m * sizeof(double))};
+        layer *x = net.layers + i;
 
-        for (size_t j = 0; j < m * m; j++)
-            z.layers[i].conv.kernel[j] = rand_double(a, b);
+        x->conv = (conv_layer){
+            .ltype = LTYPE_CONV,
+            .n = 28,
+            .k = k,
+            .bias = rand_double(a, b),
+            .kernel = malloc(k * sizeof(double *))};
+
+        for (size_t j = 0; j < k; j++)
+        {
+            x->conv.kernel[j] = malloc(k * sizeof(double));
+            for (size_t h = 0; h < k; h++)
+                x->conv.kernel[j][h] = rand_double(a, b);
+        }
     }
 
-    z.layers[l - 1].fc = (fc_layer){
-        .layer_type = TYPE_FC,
+    net.layers[l - 1].fc = (fc_layer){
+        .ltype = LTYPE_FC,
         .n = 10,
-        .p = SQUARE(z.layers[l - 2].conv.n) * 10,
-        .weight = malloc(SQUARE(z.layers[l - 2].conv.n) * 10 * sizeof(double)),
+        .m = SQUARE(net.layers[l - 1].conv.n),
+        .weight = malloc(10 * sizeof(double *)),
         .bias = malloc(10 * sizeof(double))};
 
-    for (size_t j = 0; j < z.layers[l - 1].fc.p; j++)
-        z.layers[l - 1].fc.weight[j] = rand_double(a, b);
-    for (size_t j = 0; j < z.layers[l - 1].fc.n; j++)
-        z.layers[l - 1].fc.bias[j] = rand_double(a, b);
+    for (size_t j = 0; j < net.layers[l - 1].fc.n; j++)
+    {
+        net.layers[l - 1].fc.weight[j] = malloc(net.layers[l - 1].fc.m * sizeof(double));
+        for (size_t k = 0; k < net.layers[l - 1].fc.m; k++)
+            net.layers[l - 1].fc.weight[j][k] = rand_double(a, b);
+    }
+    for (size_t j = 0; j < net.layers[l - 1].fc.n; j++)
+        net.layers[l - 1].fc.bias[j] = rand_double(a, b);
 
-    return z;
+    return net;
 }
 
-void network_destroy(network *const z)
+void network_destroy(network *const net)
 {
-    for (size_t i = 0; i < z->l; i++)
+    for (size_t i = 0; i < net->l; i++)
     {
-        switch (z->layers[i].conv.layer_type)
+        layer *x = net->layers + i;
+        switch (x->conv.ltype)
         {
-        case TYPE_CONV:
+        case LTYPE_CONV:
         {
-            free(z->layers[i].conv.kernel);
+            free(x->conv.kernel);
             break;
         }
-        case TYPE_FC:
+        case LTYPE_FC:
         {
-            free(z->layers[i].fc.weight);
-            free(z->layers[i].fc.bias);
+            free(x->fc.weight);
+            free(x->fc.bias);
             break;
         }
         }
     }
 
-    free(z->layers);
+    free(net->layers);
 }
 
 network network_read(char const *const fname)
 {
-    network z;
-    FILE *file = fopen(fname, "r");
-    if (!file)
+    network net;
+    FILE *net_f = fopen(fname, "r");
+    if (!net_f)
     {
         perror("Error while reading network from file");
-        return z;
+        return net;
     }
 
-    fscanf(file, "%zu", &z.l);
-    z.layers = malloc(z.l * sizeof(layer));
+    fscanf(net_f, "%zu", &net.l);
+    net.layers = malloc(net.l * sizeof(layer));
 
-    for (size_t i = 0; i < z.l; i++)
+    for (size_t i = 0; i < net.l; i++)
     {
-        layer *ly = z.layers + i;
+        layer *x = net.layers + i;
 
-        fscanf(file, "%hhu", &ly->conv.layer_type);
-        switch (ly->conv.layer_type)
+        fscanf(net_f, "%d", &x->conv.ltype);
+        switch (x->conv.ltype)
         {
-        case TYPE_CONV:
+        case LTYPE_CONV:
         {
-            fscanf(file, "%zu %zu %lg", &ly->conv.n, &ly->conv.m, &ly->conv.bias);
+            fscanf(net_f, "%zu %zu %lg", &x->conv.n, &x->conv.k, &x->conv.bias);
 
-            ly->conv.kernel = malloc(SQUARE(ly->conv.m) * sizeof(double));
-            for (size_t j = 0; j < SQUARE(ly->conv.m); j++)
-                fscanf(file, "%lg", &ly->conv.kernel[j]);
+            x->conv.kernel = malloc(x->conv.k * sizeof(double *));
+            for (size_t j = 0; j < x->conv.k; j++)
+            {
+                x->conv.kernel[j] = malloc(x->conv.k * sizeof(double));
+                for (size_t k = 0; k < x->conv.k; k++)
+                    fscanf(net_f, "%lg", &x->conv.kernel[j][k]);
+            }
 
             break;
         }
-        case TYPE_FC:
+        case LTYPE_FC:
         {
-            fscanf(file, "%zu", &ly->fc.n);
-            ly->fc.p = ly->fc.n * SQUARE((ly - 1)->conv.n);
-            ly->fc.weight = malloc(ly->fc.p * sizeof(double));
-            ly->fc.bias = malloc(ly->fc.n * sizeof(double));
+            fscanf(net_f, "%zu", &x->fc.n);
+            x->fc.m = SQUARE((x - 1)->conv.n);
+            x->fc.weight = malloc(x->fc.n * sizeof(double *));
+            x->fc.bias = malloc(x->fc.n * sizeof(double));
 
-            for (size_t j = 0; j < ly->fc.p; j++)
-                fscanf(file, "%lg", &ly->fc.weight[j]);
-            for (size_t j = 0; j < ly->fc.n; j++)
-                fscanf(file, "%lg", &ly->fc.bias[j]);
+            for (size_t j = 0; j < x->fc.n; j++)
+            {
+                x->fc.weight[j] = malloc(x->fc.m * sizeof(double));
+                for (size_t k = 0; k < x->fc.m; k++)
+                    fscanf(net_f, "%lg", &x->fc.weight[j][k]);
+            }
+            for (size_t j = 0; j < x->fc.n; j++)
+                fscanf(net_f, "%lg", &x->fc.bias[j]);
 
             break;
         }
         }
     }
 
-    return z;
+    return net;
 }
 
-void network_save(network const *const z, char const *const fname)
+void network_save(network const *const net, char const *const fname)
 {
-    FILE *file = fopen(fname, "w");
-    if (!file)
+    FILE *net_f = fopen(fname, "w");
+    if (!net_f)
     {
         perror("Error while saving network to disk");
         return;
     }
 
-    fprintf(file, "%zu\n", z->l);
-    for (size_t i = 0; i < z->l; i++)
+    fprintf(net_f, "%zu\n", net->l);
+    for (size_t i = 0; i < net->l; i++)
     {
-        layer *ly = z->layers + i;
+        layer *x = net->layers + i;
 
-        fprintf(file, "%hhu\n", ly->conv.layer_type);
+        fprintf(net_f, "%d\n", x->conv.ltype);
 
-        switch (ly->conv.layer_type)
+        switch (x->conv.ltype)
         {
-        case TYPE_CONV:
+        case LTYPE_CONV:
         {
-            fprintf(file, "%zu %zu\n%lg\n", ly->conv.n, ly->conv.m, ly->conv.bias);
+            fprintf(net_f, "%zu %zu\n%lg\n", x->conv.n, x->conv.k, x->conv.bias);
 
-            for (size_t j = 0; j < SQUARE(ly->conv.m); j++)
-                fprintf(file, "%lg ", ly->conv.kernel[j]);
-            fputc('\n', file);
+            for (size_t j = 0; j < x->conv.k; j++)
+                for (size_t k = 0; k < x->conv.k; k++)
+                    fprintf(net_f, "%lg ", x->conv.kernel[j][k]);
+            fputc('\n', net_f);
 
             break;
         }
-        case TYPE_FC:
+        case LTYPE_FC:
         {
-            fprintf(file, "%zu\n", ly->fc.n);
+            fprintf(net_f, "%zu\n", x->fc.n);
 
-            for (size_t j = 0; j < ly->fc.p; j++)
-                fprintf(file, "%lg ", ly->fc.weight[j]);
-            fputc('\n', file);
+            for (size_t j = 0; j < x->fc.n; j++)
+                for (size_t k = 0; k < x->fc.m; k++)
+                    fprintf(net_f, "%lg ", x->fc.weight[j][k]);
+            fputc('\n', net_f);
 
-            for (size_t j = 0; j < ly->fc.n; j++)
-                fprintf(file, "%lg ", ly->fc.bias[j]);
-            fputc('\n', file);
+            for (size_t j = 0; j < x->fc.n; j++)
+                fprintf(net_f, "%lg ", x->fc.bias[j]);
+            fputc('\n', net_f);
 
             break;
         }
         }
     }
 
-    fclose(file);
+    fclose(net_f);
+}
+
+double *network_feed_forward(network const *const net, example const *const e)
+{
+    double *u = malloc(SQUARE(28) * sizeof(double)),
+           *v = malloc(SQUARE(28) * sizeof(double));
+
+    memcpy(u, e, SQUARE(28) * sizeof(double));
 }

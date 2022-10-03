@@ -1,80 +1,73 @@
 #include "layer.h"
 #include "convolution.h"
-#include "activations.h"
+#include "util.h"
 
-void layer_forward(layer const *const x, layer const *const y,
-                   double *in, double *out)
+void layer_pass_forward(layer const *const x, layer const *const y,
+                        double const *const *const in, double *const *const out)
 {
-    switch (y->conv.layer_type)
+    switch (y->conv.ltype)
     {
-    case TYPE_CONV:
+    case LTYPE_CONV:
     {
-        convolve(x->conv.n, y->conv.m, in, out, y->conv.kernel);
+        convolve(x->conv.n, y->conv.k, in, out, y->conv.kernel);
         for (size_t i = 0; i < y->conv.n; i++)
             for (size_t j = 0; j < y->conv.n; j++)
-            {
-                out[i * y->conv.n + j] += y->conv.bias;
-                out[i * y->conv.n + j] = relu(out[i * y->conv.n + j]);
-            }
+                out[i][j] = relu(out[i][j] + y->conv.bias);
     }
-    case TYPE_FC:
+    case LTYPE_FC:
     {
     }
     }
 }
 
 // Assumes the output of the former layer is layed out such that a margin of
-// half the kernel size causes all data to be in a continuous range.
-void padding_avg(conv_layer const *const y, double *const out)
+// half the kernel size just fits in.
+void pad_avg(conv_layer const *const y, double **const out)
 {
-    size_t const s = y->m / 2, n = y->n + 2 * s;
+    size_t const s = y->k / 2;
 
-    for (size_t k = 0; k < s; k++)
+    for (size_t d = 0; d < s; d++)
     {
         // Extend sides.
-        for (size_t j = s - k; j < y->n + k; j++)
+        for (size_t j = s - d; j < y->n + d; j++)
         {
-            out[(s - k - 1) * n + j] = out[(s - k) * n + j];
-            out[(y->n + k + 1) * n + j] = out[(y->n + k) * n + j];
+            out[(s - d - 1)][j] = out[(s - d)][j];
+            out[(y->n + d + 1)][j] = out[(y->n + d)][j];
         }
 
-        for (size_t i = s - k; i < y->n + k; i++)
+        for (size_t i = s - d; i < y->n + d; i++)
         {
-            out[i * n + s - k - 1] = out[i * n + s - k];
-            out[i * n + y->n + k + 1] = out[i * n + y->n + k];
+            out[i][s - d - 1] = out[i][s - d];
+            out[i][y->n + d + 1] = out[i][y->n + d];
         }
 
         // Fill corners.
-        out[(s - k - 1) * n + s - k - 1] = (out[(s - k - 1) * n + s - k] +
-                                            out[(s - k) * n + s - k - 1]) /
-                                           2.0;
-        out[(s - k - 1) * n + y->n + k + 1] = (out[(s - k - 1) * n + y->n + k] +
-                                               out[(s - k) * n + y->n + k + 1]) /
-                                              2.0;
-        out[(y->n + k + 1) * n + s - k - 1] = (out[(y->n + k + 1) * n + s - k] +
-                                               out[(y->n + k) * n + s - k - 1]) /
-                                              2.0;
-        out[(y->n + k + 1) * n + y->n + k + 1] = (out[(y->n + k + 1) * n + y->n + k] +
-                                                  out[(y->n + k) * n + y->n + k + 1]) /
-                                                 2.0;
+        out[s - d - 1][s - d - 1] =
+            (out[s - d - 1][s - d] + out[s - d][s - d - 1]) / 2.0;
+        out[s - d - 1][y->n + d + 1] =
+            (out[s - d - 1][y->n + d] + out[s - d][y->n + d + 1]) / 2.0;
+        out[y->n + d + 1][s - d - 1] =
+            (out[y->n + d + 1][s - d] + out[y->n + d][s - d - 1]) / 2.0;
+        out[y->n + d + 1][y->n + d + 1] =
+            (out[y->n + d + 1][y->n + d] + out[y->n + d][y->n + d + 1]) / 2.0;
     }
 }
 
-void padding_zero(conv_layer const *const y, double *out)
+void pad_zero(conv_layer const *const y, double **out)
 {
-    size_t const s = y->m / 2, n = y->n + 2 * s;
+    size_t const s = y->k / 2;
 
-    for (size_t k = 0; k < s; k++)
+    for (size_t d = 0; d < s; d++)
     {
-        for (size_t j = s - k; j < y->n + k; j++)
-            out[(s - k - 1) * n + j] = out[(y->n + k + 1) * n + j] = 0.0;
+        for (size_t j = s - d; j < y->n + d; j++)
+            out[s - d - 1][j] = out[y->n + d + 1][j] = 0.0;
 
-        for (size_t i = s - k; i < y->n + k; i++)
-            out[i * n + s - k - 1] = out[i * n + y->n + k + 1] = 0;
+        for (size_t i = s - d; i < y->n + d; i++)
+            out[i][s - d - 1] = out[i][y->n + d + 1] = 0.0;
 
-        out[(s - k - 1) * n + s - k - 1] =
-            out[(s - k - 1) * n + y->n + k + 1] =
-                out[(y->n + k + 1) * n + s - k - 1] =
-                    out[(y->n + k + 1) * n + y->n + k + 1] = 0;
+        out[s - d - 1][s - d - 1] =
+            out[s - d - 1][y->n + d + 1] =
+                out[y->n + d + 1][s - d - 1] =
+                    out[y->n + d + 1][y->n + d + 1] = 0.0;
     }
 }
