@@ -19,7 +19,7 @@ typedef struct input_layer input_layer;
 struct input_layer
 {
     int ltype;
-    size_t n;
+    size_t n, padding;
 };
 
 typedef struct conv_layer conv_layer;
@@ -47,7 +47,7 @@ union layer
     input_layer input;
 };
 
-void input_layer_init(input_layer *const x, size_t n);
+void input_layer_init(input_layer *const x, size_t n, size_t padding);
 
 void conv_layer_init(conv_layer *const x, size_t n, size_t k);
 
@@ -59,7 +59,7 @@ void fc_layer_destroy(fc_layer *const);
 
 void input_layer_pass(
     input_layer const *const x, uint8_t const *const image,
-    double *const *const out, size_t padding);
+    double *const *const out);
 
 void conv_layer_pass(
     conv_layer const *const x, double *const *const in,
@@ -80,6 +80,7 @@ void conv_layer_save(conv_layer const *const x, FILE *const net_f);
 void fc_layer_save(fc_layer const *const x, FILE *const net_f);
 
 void vectorize_matrix(
-    size_t n, size_t m, double *const *const matrix, double *const vector);
+    size_t n, size_t m, size_t padding, double *const *const matrix,
+    double *const vector);
 
 #endif

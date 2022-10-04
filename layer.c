@@ -3,10 +3,11 @@
 #include "util.h"
 #include "file_io.h"
 
-void input_layer_init(input_layer *const x, size_t n)
+void input_layer_init(input_layer *const x, size_t n, size_t padding)
 {
     x->ltype = LTYPE_INPUT;
     x->n = n;
+    x->padding = padding;
 }
 
 void conv_layer_init(conv_layer *const x, size_t n, size_t k)
@@ -62,27 +63,27 @@ void pad_avg(size_t n, size_t k, double *const *const out)
     for (size_t d = 0; d < s; d++)
     {
         // Extend sides.
-        for (size_t j = s - d; j < n + d; j++)
+        for (size_t j = s - d; j < n + s + d; j++)
         {
             out[s - d - 1][j] = out[s - d][j];
-            out[n + s + d + 1][j] = out[n + s + d][j];
+            out[n + s + d][j] = out[n + s + d - 1][j];
         }
 
-        for (size_t i = s - d; i < n + d; i++)
+        for (size_t i = s - d; i < n + s + d; i++)
         {
             out[i][s - d - 1] = out[i][s - d];
-            out[i][n + s + d + 1] = out[i][n + s + d];
+            out[i][n + s + d] = out[i][n + s + d - 1];
         }
 
         // Fill corners.
         out[s - d - 1][s - d - 1] =
             (out[s - d - 1][s - d] + out[s - d][s - d - 1]) / 2.0;
-        out[s - d - 1][n + s + d + 1] =
-            (out[s - d - 1][n + s + d] + out[s - d][n + s + d + 1]) / 2.0;
-        out[n + s + d + 1][s - d - 1] =
-            (out[n + s + d + 1][s - d] + out[n + s + d][s - d - 1]) / 2.0;
-        out[n + s + d + 1][n + s + d + 1] =
-            (out[n + s + d + 1][n + s + d] + out[n + s + d][n + s + d + 1]) /
+        out[s - d - 1][n + s + d] =
+            (out[s - d - 1][n + s + d - 1] + out[s - d][n + s + d]) / 2.0;
+        out[n + s + d][s - d - 1] =
+            (out[n + s + d][s - d] + out[n + s + d - 1][s - d - 1]) / 2.0;
+        out[n + s + d][n + s + d] =
+            (out[n + s + d][n + s + d - 1] + out[n + s + d - 1][n + s + d]) /
             2.0;
     }
 }
@@ -93,20 +94,18 @@ void pad_zero(size_t n, size_t k, double *const *out)
 
     for (size_t d = 0; d < s; d++)
     {
-        for (size_t j = s - d; j < n + d; j++)
+        for (size_t j = s - d; j < n + s + d; j++)
         {
-            out[s - d - 1][j] = out[n + s + d + 1][j] = 0.0;
+            out[s - d - 1][j] = out[n + s + d][j] = 0.0;
         }
 
-        for (size_t i = s - d; i < n + d; i++)
+        for (size_t i = s - d; i < n + s + d; i++)
         {
-            out[i][s - d - 1] = out[i][n + s + d + 1] = 0.0;
+            out[i][s - d - 1] = out[i][n + s + d] = 0.0;
         }
 
-        out[s - d - 1][s - d - 1] =
-            out[s - d - 1][n + s + d + 1] =
-                out[n + s + d + 1][s - d - 1] =
-                    out[n + s + d + 1][n + s + d + 1] = 0.0;
+        out[s - d - 1][s - d - 1] = out[s - d - 1][n + s + d] =
+            out[n + s + d][s - d - 1] = out[n + s + d][n + s + d] = 0.0;
     }
 }
 
@@ -128,13 +127,13 @@ void conv_layer_pass(
 
 void input_layer_pass(
     input_layer const *const x, uint8_t const *const image,
-    double *const *const out, size_t padding)
+    double *const *const out)
 {
     for (size_t i = 0; i < SQUARE(x->n); i++)
     {
-        out[i / x->n + padding][i % x->n + padding] = image[i];
+        out[(i / x->n) + x->padding][(i % x->n) + x->padding] = image[i];
     }
-    pad_avg(x->n, padding, out);
+    pad_avg(x->n, x->padding, out);
 }
 
 void fc_layer_pass(fc_layer const *const x, double *const in, double *const out)
@@ -149,8 +148,8 @@ void fc_layer_pass(fc_layer const *const x, double *const in, double *const out)
 
 void input_layer_read(input_layer *const x, FILE *const net_f)
 {
-    fscanf(net_f, "%zu", &x->n);
-    input_layer_init(x, x->n);
+    fscanf(net_f, "%zu %zu", &x->n, &x->padding);
+    input_layer_init(x, x->n, x->padding);
 }
 
 void conv_layer_read(conv_layer *const x, FILE *const net_f)
@@ -188,7 +187,7 @@ void fc_layer_read(fc_layer *const x, FILE *const net_f)
 
 void input_layer_save(input_layer const *const x, FILE *const net_f)
 {
-    fprintf(net_f, "%zu\n", x->n);
+    fprintf(net_f, "%zu %zu\n", x->n, x->padding);
 }
 
 void conv_layer_save(conv_layer const *const x, FILE *const net_f)
@@ -226,13 +225,14 @@ void fc_layer_save(fc_layer const *const x, FILE *const net_f)
 }
 
 void vectorize_matrix(
-    size_t n, size_t m, double *const *const matrix, double *const vector)
+    size_t n, size_t m, size_t padding, double *const *const matrix,
+    double *const vector)
 {
     for (size_t i = 0; i < n; i++)
     {
         for (size_t j = 0; j < m; j++)
         {
-            vector[i * m + j] = matrix[i][j];
+            vector[i * m + j] = matrix[i + padding][j + padding];
         }
     }
 }

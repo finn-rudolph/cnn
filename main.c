@@ -25,7 +25,7 @@ enum net_command get_command(int argc, char **argv)
     enum net_command arg;
     if (!strcmp(argv[1], "init"))
         arg = NET_INIT;
-    if (!strcmp(argv[1], "evaluate"))
+    else if (!strcmp(argv[1], "evaluate"))
         arg = NET_EVALUATE;
     else
         print_help();

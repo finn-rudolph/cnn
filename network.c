@@ -14,7 +14,7 @@ network network_init(size_t num_layers, size_t kernel_size)
     net.l = num_layers;
     net.layers = malloc((num_layers + 1) * sizeof(layer));
 
-    input_layer_init(&net.layers[0].input, 28);
+    input_layer_init(&net.layers[0].input, 28, kernel_size / 2);
 
     for (size_t i = 1; i < num_layers; i++)
     {
@@ -147,17 +147,18 @@ void network_save(network const *const net, char const *const fname)
 double **network_pass_forward(
     network const *const net, size_t t, uint8_t *const *const images)
 {
+    size_t const grid_size = 28 + 2 * net->layers[0].input.padding;
     // Two grid containers for convolutional layers, two linear containers for
     // fully connected layers. Serve as input / output buffer.
-    double **u = malloc(28 * sizeof(double *)),
-           **v = malloc(28 * sizeof(double *)),
-           *p = malloc(SQUARE(28) * sizeof(double)),
-           *q = malloc(SQUARE(28) * sizeof(double));
+    double **u = malloc(grid_size * sizeof(double *)),
+           **v = malloc(grid_size * sizeof(double *)),
+           *p = malloc(SQUARE(grid_size) * sizeof(double)),
+           *q = malloc(SQUARE(grid_size) * sizeof(double));
 
-    for (size_t i = 0; i < 28; i++)
+    for (size_t i = 0; i < grid_size; i++)
     {
-        u[i] = malloc(28 * sizeof(double));
-        v[i] = malloc(28 * sizeof(double));
+        u[i] = malloc(grid_size * sizeof(double));
+        v[i] = malloc(grid_size * sizeof(double));
     }
 
     double **result = malloc(t * sizeof(double *));
@@ -168,8 +169,7 @@ double **network_pass_forward(
 
     for (size_t i = 0; i < t; i++)
     {
-        input_layer_pass(&net->layers[0].input, images[0], v,
-                         net->layers[1].conv.k / 2);
+        input_layer_pass(&net->layers[0].input, images[0], u);
 
         for (size_t i = 1; i < net->l; i++)
         {
@@ -188,7 +188,8 @@ double **network_pass_forward(
                 {
                     // After the first fully connected layer, only such layers
                     // come, therefore switch to vectors instead of matrices.
-                    vectorize_matrix(x->fc.n, x->fc.m, u, p);
+                    vectorize_matrix((x - 1)->conv.n, (x - 1)->conv.n,
+                                     (x - 1)->conv.k / 2, u, p);
                 }
                 fc_layer_pass(&net->layers[i].fc, p, q);
                 swap(&p, &q);
@@ -199,8 +200,8 @@ double **network_pass_forward(
         memcpy(result[i], p, 10 * sizeof(double));
     }
 
-    destroy_matrix(28, u);
-    destroy_matrix(28, v);
+    destroy_matrix(grid_size, u);
+    destroy_matrix(grid_size, v);
     free(p);
     free(q);
     return result;
@@ -229,10 +230,11 @@ void network_save_results(
             }
         }
 
-        fprintf(result_f, "%huu\n", max_digit);
+        fprintf(result_f, "%hhu\n", max_digit);
         for (size_t j = 0; j < 10; j++)
         {
             fprintf(result_f, "%lg ", results[i][j]);
         }
+        fputc('\n', result_f);
     }
 }
