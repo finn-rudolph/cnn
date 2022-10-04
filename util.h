@@ -12,6 +12,31 @@ static inline double rand_double(double a, double b)
     return a + (rand() / (RAND_MAX / (b - a)));
 }
 
+static inline void destroy_matrix_uint8(size_t n, uint8_t **const matrix)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        free(matrix[i]);
+    }
+    free(matrix);
+}
+
+static inline void destroy_matrix_double(size_t n, double **const matrix)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        free(matrix[i]);
+    }
+    free(matrix);
+}
+
+#define destroy_matrix(n, matrix)    \
+    _Generic(matrix,                 \
+             uint8_t * *             \
+             : destroy_matrix_uint8, \
+               double **             \
+             : destroy_matrix_double)(n, matrix)
+
 static inline void swap_dp(double **x, double **y)
 {
     double *z = *x;

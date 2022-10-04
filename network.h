@@ -19,7 +19,10 @@ network network_read(char const *const fname);
 
 void network_save(network const *const net, char const *const fname);
 
-double *network_feed_forward(
-    network const *const net, uint8_t const *const image);
+double **network_pass_forward(
+    network const *const net, size_t t, uint8_t *const *const images);
+
+void network_save_results(
+    char const *const result_fname, size_t t, double *const *const result);
 
 #endif

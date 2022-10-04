@@ -144,8 +144,8 @@ void network_save(network const *const net, char const *const fname)
     fclose(net_f);
 }
 
-double *network_feed_forward(
-    network const *const net, uint8_t const *const image)
+double **network_pass_forward(
+    network const *const net, size_t t, uint8_t *const *const images)
 {
     // Two grid containers for convolutional layers, two linear containers for
     // fully connected layers. Serve as input / output buffer.
@@ -160,44 +160,79 @@ double *network_feed_forward(
         v[i] = malloc(28 * sizeof(double));
     }
 
-    input_layer_pass(&net->layers[0].input, image, v, net->layers[1].conv.k / 2);
-
-    for (size_t i = 1; i < net->l; i++)
+    double **result = malloc(t * sizeof(double *));
+    for (size_t i = 0; i < t; i++)
     {
-        layer *x = net->layers + i;
-        switch (x->conv.ltype)
+        result[i] = malloc(10 * sizeof(double));
+    }
+
+    for (size_t i = 0; i < t; i++)
+    {
+        input_layer_pass(&net->layers[0].input, images[0], v,
+                         net->layers[1].conv.k / 2);
+
+        for (size_t i = 1; i < net->l; i++)
         {
-        case LTYPE_CONV:
-        {
-            conv_layer_pass(&x->conv, u, v);
-            swap(&u, &v);
-            break;
-        }
-        case LTYPE_FC:
-        {
-            if ((x - 1)->conv.ltype != LTYPE_FC)
+            layer *x = net->layers + i;
+            switch (x->conv.ltype)
             {
-                // After the first fully connected layer, only such layers come,
-                // therefore switch to vectors instead of matrices.
-                vectorize_matrix(x->fc.n, x->fc.m, u, p);
+            case LTYPE_CONV:
+            {
+                conv_layer_pass(&x->conv, u, v);
+                swap(&u, &v);
+                break;
             }
-            fc_layer_pass(&net->layers[i].fc, p, q);
-            swap(&p, &q);
+            case LTYPE_FC:
+            {
+                if ((x - 1)->conv.ltype != LTYPE_FC)
+                {
+                    // After the first fully connected layer, only such layers
+                    // come, therefore switch to vectors instead of matrices.
+                    vectorize_matrix(x->fc.n, x->fc.m, u, p);
+                }
+                fc_layer_pass(&net->layers[i].fc, p, q);
+                swap(&p, &q);
+            }
+            }
         }
-        }
+
+        memcpy(result[i], p, 10 * sizeof(double));
     }
 
-    double *result = malloc(10 * sizeof(double));
-    memcpy(result, p, 10 * sizeof(double));
-
-    for (size_t i = 0; i < 28; i++)
-    {
-        free(v[i]);
-        free(u[i]);
-    }
-    free(u);
-    free(v);
+    destroy_matrix(28, u);
+    destroy_matrix(28, v);
     free(p);
     free(q);
     return result;
+}
+
+void network_save_results(
+    char const *const result_fname, size_t t, double *const *const results)
+{
+    FILE *result_f = fopen(result_fname, "w");
+    if (!result_f)
+    {
+        perror("Error while saving results");
+        return;
+    }
+
+    for (size_t i = 0; i < t; i++)
+    {
+        uint8_t max_digit;
+        double max_val = 0.0;
+        for (size_t j = 0; j < 10; j++)
+        {
+            if (results[i][j] > max_val)
+            {
+                max_val = results[i][j];
+                max_digit = j + 1;
+            }
+        }
+
+        fprintf(result_f, "%huu\n", max_digit);
+        for (size_t j = 0; j < 10; j++)
+        {
+            fprintf(result_f, "%lg ", results[i][j]);
+        }
+    }
 }
