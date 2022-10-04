@@ -40,6 +40,12 @@ int main(int argc, char **argv)
         scanf("%zu", &num_layers);
         printf("Kernel size: ");
         scanf("%zu", &kernel_size);
+        while (!(kernel_size & 1))
+        {
+            printf("Kernel size must be odd. Enter again: ");
+            scanf("%zu", &kernel_size);
+        }
+
         printf("Network name: ");
         scanf("%s", name);
 

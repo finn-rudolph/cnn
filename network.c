@@ -26,7 +26,7 @@ network network_init(size_t num_layers, size_t kernel_size)
         {
             for (size_t k = 0; k < kernel_size; k++)
             {
-                x->conv.kernel[j][k] = rand_double(PARAM_MAX, PARAM_MAX);
+                x->conv.kernel[j][k] = rand_double(PARAM_MIN, PARAM_MAX);
             }
         }
     }
@@ -159,7 +159,7 @@ double *network_feed_forward(network const *const net, example const *const e)
         v[i] = malloc(28 * sizeof(double));
     }
 
-    input_layer_pass(&net->layers[0].input, e, v, net->layers[1].conv.k);
+    input_layer_pass(&net->layers[0].input, e, v, net->layers[1].conv.k / 2);
 
     for (size_t i = 1; i < net->l; i++)
     {

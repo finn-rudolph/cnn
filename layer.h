@@ -65,8 +65,7 @@ void conv_layer_pass(
     conv_layer const *const x, double *const *const in,
     double *const *const out);
 
-void fc_layer_pass(
-    fc_layer const *const x, double *const in, double *const out);
+void fc_layer_pass(fc_layer const *const x, double *const in, double *const out);
 
 void input_layer_read(input_layer *const x, FILE *const net_f);
 
