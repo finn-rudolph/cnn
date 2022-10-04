@@ -58,7 +58,7 @@ void conv_layer_destroy(conv_layer *const x);
 void fc_layer_destroy(fc_layer *const);
 
 void input_layer_pass(
-    input_layer const *const x, example const *const e,
+    input_layer const *const x, uint8_t const *const image,
     double *const *const out, size_t padding);
 
 void conv_layer_pass(

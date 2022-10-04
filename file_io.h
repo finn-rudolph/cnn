@@ -6,14 +6,10 @@
 #include <stdlib.h>
 #include <assert.h>
 
-typedef struct example example;
-struct example
-{
-    uint8_t *image;
-    uint8_t solution;
-};
+// Images from a to b (exclusive) are read. An image is represented as a
+// one-dimensional array organized by rows.
+uint8_t **read_images(char const *const image_fname, size_t a, size_t b);
 
-example *read_range(char const *const image_fname, char const *const label_fname,
-                    size_t a, size_t b);
+uint8_t *read_labels(char const *const label_fname, size_t a, size_t b);
 
 #endif

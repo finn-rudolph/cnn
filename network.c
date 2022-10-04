@@ -144,7 +144,8 @@ void network_save(network const *const net, char const *const fname)
     fclose(net_f);
 }
 
-double *network_feed_forward(network const *const net, example const *const e)
+double *network_feed_forward(
+    network const *const net, uint8_t const *const image)
 {
     // Two grid containers for convolutional layers, two linear containers for
     // fully connected layers. Serve as input / output buffer.
@@ -159,7 +160,7 @@ double *network_feed_forward(network const *const net, example const *const e)
         v[i] = malloc(28 * sizeof(double));
     }
 
-    input_layer_pass(&net->layers[0].input, e, v, net->layers[1].conv.k / 2);
+    input_layer_pass(&net->layers[0].input, image, v, net->layers[1].conv.k / 2);
 
     for (size_t i = 1; i < net->l; i++)
     {
@@ -194,8 +195,8 @@ double *network_feed_forward(network const *const net, example const *const e)
         free(v[i]);
         free(u[i]);
     }
-    free(v);
     free(u);
+    free(v);
     free(p);
     free(q);
     return result;

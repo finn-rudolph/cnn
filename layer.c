@@ -127,12 +127,12 @@ void conv_layer_pass(
 }
 
 void input_layer_pass(
-    input_layer const *const x, example const *const e,
+    input_layer const *const x, uint8_t const *const image,
     double *const *const out, size_t padding)
 {
     for (size_t i = 0; i < SQUARE(x->n); i++)
     {
-        out[i / x->n + padding][i % x->n + padding] = e->image[i];
+        out[i / x->n + padding][i % x->n + padding] = image[i];
     }
     pad_avg(x->n, padding, out);
 }
