@@ -3,6 +3,9 @@
 #include "util.h"
 #include "file_io.h"
 
+#define pad(n, k, out) pad_zero(n, k, out)
+#define activation(x) relu(x)
+
 void input_layer_init(input_layer *const x, size_t n, size_t padding)
 {
     x->ltype = LTYPE_INPUT;
@@ -96,17 +99,32 @@ void pad_zero(size_t n, size_t k, double *const *out)
     {
         for (size_t j = s - d; j < n + s + d; j++)
         {
-            out[s - d - 1][j] = out[n + s + d][j] = 0.0;
+            out[s - d - 1][j] = 0.0;
+            out[n + s + d][j] = 0.0;
         }
 
         for (size_t i = s - d; i < n + s + d; i++)
         {
-            out[i][s - d - 1] = out[i][n + s + d] = 0.0;
+            out[i][s - d - 1] = 0.0;
+            out[i][n + s + d] = 0.0;
         }
 
-        out[s - d - 1][s - d - 1] = out[s - d - 1][n + s + d] =
-            out[n + s + d][s - d - 1] = out[n + s + d][n + s + d] = 0.0;
+        out[s - d - 1][s - d - 1] = 0.0;
+        out[s - d - 1][n + s + d] = 0.0;
+        out[n + s + d][s - d - 1] = 0.0;
+        out[n + s + d][n + s + d] = 0.0;
     }
+}
+
+void input_layer_pass(
+    input_layer const *const x, uint8_t const *const image,
+    double *const *const out)
+{
+    for (size_t i = 0; i < square(x->n); i++)
+    {
+        out[(i / x->n) + x->padding][(i % x->n) + x->padding] = image[i];
+    }
+    pad(x->n, x->padding * 2 + 1, out);
 }
 
 void conv_layer_pass(
@@ -119,21 +137,10 @@ void conv_layer_pass(
     {
         for (size_t j = s; j < x->n + s; j++)
         {
-            out[i][j] = relu(out[i][j] + x->bias);
+            out[i][j] = activation(out[i][j] + x->bias);
         }
     }
-    pad_avg(x->n, x->k, out);
-}
-
-void input_layer_pass(
-    input_layer const *const x, uint8_t const *const image,
-    double *const *const out)
-{
-    for (size_t i = 0; i < SQUARE(x->n); i++)
-    {
-        out[(i / x->n) + x->padding][(i % x->n) + x->padding] = image[i];
-    }
-    pad_avg(x->n, x->padding, out);
+    pad(x->n, x->k, out);
 }
 
 void fc_layer_pass(fc_layer const *const x, double *const in, double *const out)

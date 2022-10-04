@@ -5,8 +5,8 @@
 #include "network.h"
 #include "util.h"
 
-#define PARAM_MIN 0.0
-#define PARAM_MAX 10.0
+#define PARAM_MIN -1.0
+#define PARAM_MAX 1.0
 
 network network_init(size_t num_layers, size_t kernel_size)
 {
@@ -32,7 +32,7 @@ network network_init(size_t num_layers, size_t kernel_size)
     }
 
     fc_layer_init(&net.layers[net.l - 1].fc, 10,
-                  SQUARE(net.layers[net.l - 2].conv.n));
+                  square(net.layers[net.l - 2].conv.n));
 
     for (size_t j = 0; j < net.layers[net.l - 1].fc.n; j++)
     {
@@ -152,8 +152,8 @@ double **network_pass_forward(
     // fully connected layers. Serve as input / output buffer.
     double **u = malloc(grid_size * sizeof(double *)),
            **v = malloc(grid_size * sizeof(double *)),
-           *p = malloc(SQUARE(grid_size) * sizeof(double)),
-           *q = malloc(SQUARE(grid_size) * sizeof(double));
+           *p = malloc(square(grid_size) * sizeof(double)),
+           *q = malloc(square(grid_size) * sizeof(double));
 
     for (size_t i = 0; i < grid_size; i++)
     {
@@ -162,14 +162,14 @@ double **network_pass_forward(
     }
 
     double **result = malloc(t * sizeof(double *));
-    for (size_t i = 0; i < t; i++)
+    for (size_t z = 0; z < t; z++)
     {
-        result[i] = malloc(10 * sizeof(double));
+        result[z] = malloc(10 * sizeof(double));
     }
 
-    for (size_t i = 0; i < t; i++)
+    for (size_t z = 0; z < t; z++)
     {
-        input_layer_pass(&net->layers[0].input, images[0], u);
+        input_layer_pass(&net->layers[0].input, images[z], u);
 
         for (size_t i = 1; i < net->l; i++)
         {
@@ -180,6 +180,7 @@ double **network_pass_forward(
             {
                 conv_layer_pass(&x->conv, u, v);
                 swap(&u, &v);
+
                 break;
             }
             case LTYPE_FC:
@@ -193,11 +194,13 @@ double **network_pass_forward(
                 }
                 fc_layer_pass(&net->layers[i].fc, p, q);
                 swap(&p, &q);
+
+                break;
             }
             }
         }
 
-        memcpy(result[i], p, 10 * sizeof(double));
+        memcpy(result[z], p, 10 * sizeof(double));
     }
 
     destroy_matrix(grid_size, u);

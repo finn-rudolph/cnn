@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <math.h>
 
-#define SQUARE(x) (x * x)
+#define square(x) (x * x)
 
 static inline double rand_double(double a, double b)
 {
