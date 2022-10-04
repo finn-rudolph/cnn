@@ -210,6 +210,26 @@ double **network_pass_forward(
     return result;
 }
 
+uint8_t *calc_max_digits(size_t t, double *const *const results)
+{
+    uint8_t *max_digits = malloc(t * sizeof(uint8_t));
+
+    for (size_t i = 0; i < t; i++)
+    {
+        double max_val = 0.0;
+        for (size_t j = 0; j < 10; j++)
+        {
+            if (results[i][j] > max_val)
+            {
+                max_val = results[i][j];
+                max_digits[i] = j;
+            }
+        }
+    }
+
+    return max_digits;
+}
+
 void network_save_results(
     char const *const result_fname, size_t t, double *const *const results)
 {
@@ -220,24 +240,47 @@ void network_save_results(
         return;
     }
 
+    uint8_t *max_digits = calc_max_digits(t, results);
+
     for (size_t i = 0; i < t; i++)
     {
-        uint8_t max_digit;
-        double max_val = 0.0;
-        for (size_t j = 0; j < 10; j++)
-        {
-            if (results[i][j] > max_val)
-            {
-                max_val = results[i][j];
-                max_digit = j + 1;
-            }
-        }
-
-        fprintf(result_f, "%hhu\n", max_digit);
+        fprintf(result_f, "%hhu\n", max_digits[i]);
         for (size_t j = 0; j < 10; j++)
         {
             fprintf(result_f, "%lg ", results[i][j]);
         }
         fputc('\n', result_f);
     }
+
+    free(max_digits);
+    fclose(result_f);
+}
+
+void network_print_accuracy(
+    size_t t, double *const *const results, uint8_t *const labels)
+{
+    unsigned digit_correct[10], digit_occ[10];
+    memset(digit_correct, 0, 10 * sizeof(unsigned));
+    memset(digit_occ, 0, 10 * sizeof(unsigned));
+    unsigned total_correct = 0;
+
+    uint8_t *max_digits = calc_max_digits(t, results);
+
+    for (size_t i = 0; i < t; i++)
+    {
+        if (max_digits[i] == labels[i])
+        {
+            digit_correct[max_digits[i]]++;
+            total_correct++;
+        }
+        digit_occ[labels[i]]++;
+    }
+
+    printf("  Total accuracy: %lg\n", (double)total_correct / (double)t);
+    for (uint8_t i = 0; i < 10; i++)
+    {
+        printf("  %hhu: %lg\n", i, (double)digit_correct[i] / (double)digit_occ[i]);
+    }
+
+    free(max_digits);
 }

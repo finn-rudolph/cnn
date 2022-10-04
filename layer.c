@@ -1,7 +1,6 @@
 #include "layer.h"
 #include "convolution.h"
 #include "util.h"
-#include "file_io.h"
 
 #define pad(n, k, out) pad_zero(n, k, out)
 #define activation(x) relu(x)

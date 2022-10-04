@@ -2,7 +2,6 @@
 #define NETWORK_H 1
 
 #include "layer.h"
-#include "file_io.h"
 
 typedef struct network network;
 struct network
@@ -24,5 +23,8 @@ double **network_pass_forward(
 
 void network_save_results(
     char const *const result_fname, size_t t, double *const *const result);
+
+void network_print_accuracy(
+    size_t t, double *const *const results, uint8_t *const labels);
 
 #endif

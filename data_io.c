@@ -1,4 +1,4 @@
-#include "file_io.h"
+#include "data_io.h"
 #include "util.h"
 
 uint8_t **read_images(char const *const image_fname, size_t a, size_t b)
