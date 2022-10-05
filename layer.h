@@ -5,6 +5,9 @@
 #include <stddef.h>
 #include <stdio.h>
 
+#define activation vrelu
+#define out_actiavtion softmax
+
 typedef enum layer_type layer_type;
 enum layer_type
 {
@@ -13,36 +16,40 @@ enum layer_type
     LTYPE_FC
 };
 
+typedef void (*activation_fn)(size_t n, double *const);
+
 typedef struct input_layer input_layer;
 struct input_layer
 {
-    int ltype;
+    uint8_t ltype;
     size_t n, padding;
 };
 
 typedef struct conv_layer conv_layer;
 struct conv_layer
 {
-    int ltype;
+    uint8_t ltype;
     size_t n, k; // layer and kernel size
     double bias;
     double **kernel;
+    activation_fn f;
 };
 
 typedef struct fc_layer fc_layer;
 struct fc_layer
 {
-    int ltype;
+    uint8_t ltype;
     size_t n, m;            // number of nodes in this and the previous layer
     double **weight, *bias; // weights and biases
+    activation_fn f;
 };
 
 typedef union layer layer;
 union layer
 {
+    input_layer input;
     conv_layer conv;
     fc_layer fc;
-    input_layer input;
 };
 
 void input_layer_init(input_layer *const x, size_t n, size_t padding);

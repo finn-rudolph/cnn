@@ -1,9 +1,10 @@
+#include <memory.h>
+
 #include "layer.h"
 #include "convolution.h"
 #include "util.h"
 
 #define pad(n, k, out) pad_zero(n, k, out)
-#define activation(x) relu(x)
 
 void input_layer_init(input_layer *const x, size_t n, size_t padding)
 {
@@ -17,6 +18,7 @@ void conv_layer_init(conv_layer *const x, size_t n, size_t k)
     x->ltype = LTYPE_CONV;
     x->n = n;
     x->k = k;
+    x->f = &activation;
     x->kernel = malloc(k * sizeof(double *));
     for (size_t i = 0; i < k; i++)
     {
@@ -29,6 +31,7 @@ void fc_layer_init(fc_layer *const x, size_t n, size_t m)
     x->ltype = LTYPE_FC;
     x->n = n;
     x->m = m;
+    x->f = &activation;
     x->weight = malloc(n * sizeof(double *));
     x->bias = malloc(n * sizeof(double));
     for (size_t i = 0; i < n; i++)
@@ -136,8 +139,9 @@ void conv_layer_pass(
     {
         for (size_t j = s; j < x->n + s; j++)
         {
-            out[i][j] = activation(out[i][j] + x->bias);
+            out[i][j] += x->bias;
         }
+        (*x->f)(x->n, out[i] + s);
     }
     pad(x->n, x->k, out);
 }
@@ -149,7 +153,7 @@ void fc_layer_pass(fc_layer const *const x, double *const in, double *const out)
     {
         out[i] += x->bias[i];
     }
-    softmax(x->n, out);
+    (*x->f)(x->n, out);
 }
 
 void input_layer_read(input_layer *const x, FILE *const net_f)

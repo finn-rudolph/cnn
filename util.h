@@ -87,7 +87,8 @@ void mul_matrix_vector(
     size_t n, size_t m, double const *const in,
     double *const *const matrix, double *const out);
 
-// Suffix _d means derivative.
+// Suffix _d means derivative. All activation functions are defined for scalars
+// and vectors (prefix v).
 
 static inline double relu(double x)
 {
@@ -109,16 +110,48 @@ static inline double relu_smooth_d(double x)
     return 1.0 / (1.0 + exp(-x));
 }
 
-static inline void softmax(size_t n, double *const in)
+static inline void vrelu(size_t n, double *const x)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        x[i] = x[i] > 0.0 ? x[i] : 0.0;
+    }
+}
+
+static inline void vrelu_d(size_t n, double *const x)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        x[i] = x[i] > 0.0 ? 1.0 : 0.0;
+    }
+}
+
+static inline void vrelu_smooth(size_t n, double *const x)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        x[i] = log1p(1.0 + exp(x[i]));
+    }
+}
+
+static inline void vrelu_smooth_d(size_t n, double *x)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        x[i] = 1.0 / (1.0 + exp(-x[i]));
+    }
+}
+
+static inline void softmax(size_t n, double *const x)
 {
     double sum = 0.0;
     for (size_t i = 0; i < n; i++)
     {
-        sum += exp(in[i]);
+        sum += exp(x[i]);
     }
     for (size_t i = 0; i < n; i++)
     {
-        in[i] = exp(in[i]) / sum;
+        x[i] = exp(x[i]) / sum;
     }
 }
 

@@ -11,12 +11,12 @@
 network network_init(size_t num_layers, size_t kernel_size)
 {
     network net;
-    net.l = num_layers;
-    net.layers = malloc((num_layers + 1) * sizeof(layer));
+    net.l = num_layers + 1;
+    net.layers = malloc(net.l * sizeof(layer));
 
     input_layer_init(&net.layers[0].input, 28, kernel_size / 2);
 
-    for (size_t i = 1; i < num_layers; i++)
+    for (size_t i = 1; i < net.l - 1; i++)
     {
         layer *x = net.layers + i;
         conv_layer_init(&x->conv, 28, kernel_size);
@@ -33,6 +33,7 @@ network network_init(size_t num_layers, size_t kernel_size)
 
     fc_layer_init(&net.layers[net.l - 1].fc, 10,
                   square(net.layers[net.l - 2].conv.n));
+    net.layers[net.l - 1].fc.f = &out_actiavtion;
 
     for (size_t j = 0; j < net.layers[net.l - 1].fc.n; j++)
     {
@@ -58,9 +59,13 @@ void network_destroy(network *const net)
         layer *x = net->layers + i;
         switch (x->conv.ltype)
         {
+        case LTYPE_INPUT:
+            break;
+
         case LTYPE_CONV:
             conv_layer_destroy(&x->conv);
             break;
+
         case LTYPE_FC:
             fc_layer_destroy(&x->fc);
             break;
@@ -87,7 +92,7 @@ network network_read(char const *const fname)
     {
         layer *x = net.layers + i;
 
-        fscanf(net_f, "%d", &x->conv.ltype);
+        fscanf(net_f, "%hhu", &x->conv.ltype);
 
         switch (x->conv.ltype)
         {
@@ -105,6 +110,7 @@ network network_read(char const *const fname)
         }
     }
 
+    net.layers[net.l - 1].fc.f = &out_actiavtion;
     return net;
 }
 
@@ -123,7 +129,7 @@ void network_save(network const *const net, char const *const fname)
     {
         layer *x = net->layers + i;
 
-        fprintf(net_f, "%d\n", x->conv.ltype);
+        fprintf(net_f, "%hhu\n", x->conv.ltype);
 
         switch (x->conv.ltype)
         {
@@ -180,7 +186,6 @@ double **network_pass_forward(
             {
                 conv_layer_pass(&x->conv, u, v);
                 swap(&u, &v);
-
                 break;
             }
             case LTYPE_FC:
@@ -194,7 +199,6 @@ double **network_pass_forward(
                 }
                 fc_layer_pass(&net->layers[i].fc, p, q);
                 swap(&p, &q);
-
                 break;
             }
             }
