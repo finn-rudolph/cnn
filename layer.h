@@ -5,9 +5,6 @@
 #include <stddef.h>
 #include <stdio.h>
 
-#define activation vrelu
-#define out_actiavtion softmax
-
 typedef enum layer_type layer_type;
 enum layer_type
 {

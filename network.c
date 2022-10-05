@@ -4,6 +4,7 @@
 
 #include "network.h"
 #include "util.h"
+#include "def.h"
 
 #define PARAM_MIN -1.0
 #define PARAM_MAX 1.0

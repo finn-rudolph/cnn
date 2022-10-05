@@ -1,7 +1,8 @@
 #include <memory.h>
 
-#include "layer.h"
 #include "convolution.h"
+#include "def.h"
+#include "layer.h"
 #include "util.h"
 
 #define pad(n, k, out) pad_zero(n, k, out)
@@ -127,6 +128,20 @@ void input_layer_pass(
         out[(i / x->n) + x->padding][(i % x->n) + x->padding] = image[i];
     }
     pad(x->n, x->padding * 2 + 1, out);
+
+#ifdef DEBUG_MODE
+
+    for (size_t i = 0; i < x->n + 2 * x->padding; i++)
+    {
+        for (size_t j = 0; j < x->n + 2 * x->padding; j++)
+        {
+            printf("%lg ", out[i][j]);
+        }
+        putchar('\n');
+    }
+    putchar('\n');
+
+#endif
 }
 
 void conv_layer_pass(
@@ -144,6 +159,20 @@ void conv_layer_pass(
         (*x->f)(x->n, out[i] + s);
     }
     pad(x->n, x->k, out);
+
+#ifdef DEBUG_MODE
+
+    for (size_t i = 0; i < x->n + x->k - 1; i++)
+    {
+        for (size_t j = 0; j < x->n + x->k - 1; j++)
+        {
+            printf("%lg ", out[i][j]);
+        }
+        putchar('\n');
+    }
+    putchar('\n');
+
+#endif
 }
 
 void fc_layer_pass(fc_layer const *const x, double *const in, double *const out)
@@ -154,6 +183,16 @@ void fc_layer_pass(fc_layer const *const x, double *const in, double *const out)
         out[i] += x->bias[i];
     }
     (*x->f)(x->n, out);
+
+#ifdef DEBUG_MODE
+
+    for (size_t i = 0; i < x->n; i++)
+    {
+        printf("%lg ", out[i]);
+    }
+    printf("\n\n");
+
+#endif
 }
 
 void input_layer_read(input_layer *const x, FILE *const net_f)
