@@ -30,15 +30,17 @@ struct conv_layer
     double bias;
     double **kernel;
     activation_fn f;
+    double **out, **kernel_gradient, bias_gradient; // buffers for backpropagation
 };
 
 typedef struct fc_layer fc_layer;
 struct fc_layer
 {
     uint8_t ltype;
-    size_t n, m;            // number of nodes in this and the previous layer
-    double **weight, *bias; // weights and biases
+    size_t n, m; // number of nodes in this and the previous layer
+    double **weight, *bias;
     activation_fn f;
+    double *out, **weight_gradient, *bias_gradient;
 };
 
 typedef union layer layer;
