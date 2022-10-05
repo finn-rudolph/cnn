@@ -89,12 +89,12 @@ int main(int argc, char **argv)
     case NET_INIT:
     {
         char net_fname[100];
-        size_t num_layers, kernel_size;
+        size_t num_conv, num_fc, kernel_size, fc_size;
 
         printf("Network name: ");
         scanf("%s", net_fname);
-        printf("Number of layers: ");
-        scanf("%zu", &num_layers);
+        printf("Number of convolutional layers: ");
+        scanf("%zu", &num_conv);
         printf("Kernel size: ");
         scanf("%zu", &kernel_size);
 
@@ -104,7 +104,16 @@ int main(int argc, char **argv)
             scanf("%zu", &kernel_size);
         }
 
-        network net = network_init(num_layers, kernel_size);
+        printf("Number of fully connected layers: ");
+        scanf("%zu", &num_fc);
+        printf("Number of nodes in fully connected layers: ");
+        scanf("%zu", &fc_size);
+
+        assert(num_conv && num_fc);
+        assert(kernel_size > 2);
+        assert(fc_size >= 10);
+
+        network net = network_init(num_conv, num_fc, kernel_size, fc_size);
         network_save(&net, net_fname);
         network_destroy(&net);
 

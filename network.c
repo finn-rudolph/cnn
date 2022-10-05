@@ -8,45 +8,46 @@
 #define PARAM_MIN -1.0
 #define PARAM_MAX 1.0
 
-network network_init(size_t num_layers, size_t kernel_size)
+network network_init(
+    size_t num_conv, size_t num_fc, size_t kernel_size, size_t fc_size)
 {
     network net;
-    net.l = num_layers + 1;
+    net.l = num_conv + num_fc + 1;
     net.layers = malloc(net.l * sizeof(layer));
 
     input_layer_init(&net.layers[0].input, 28, kernel_size / 2);
 
-    for (size_t i = 1; i < net.l - 1; i++)
+    for (size_t i = 1; i < num_conv + 1; i++)
     {
-        layer *x = net.layers + i;
-        conv_layer_init(&x->conv, 28, kernel_size);
-        x->conv.bias = rand_double(PARAM_MIN, PARAM_MAX);
+        conv_layer *x = &net.layers[i].conv;
+        conv_layer_init(x, 28, kernel_size);
+        x->bias = rand_double(PARAM_MIN, PARAM_MAX);
 
-        for (size_t j = 0; j < kernel_size; j++)
+        for (size_t j = 0; j < x->k; j++)
         {
-            for (size_t k = 0; k < kernel_size; k++)
+            for (size_t k = 0; k < x->k; k++)
             {
-                x->conv.kernel[j][k] = rand_double(PARAM_MIN, PARAM_MAX);
+                x->kernel[j][k] = rand_double(PARAM_MIN, PARAM_MAX);
             }
         }
     }
 
-    fc_layer_init(&net.layers[net.l - 1].fc, 10,
-                  square(net.layers[net.l - 2].conv.n));
-    net.layers[net.l - 1].fc.f = &out_actiavtion;
-
-    for (size_t j = 0; j < net.layers[net.l - 1].fc.n; j++)
+    for (size_t i = num_conv + 1; i < net.l; i++)
     {
-        for (size_t k = 0; k < net.layers[net.l - 1].fc.m; k++)
+        fc_layer *x = &net.layers[i].fc;
+        fc_layer_init(
+            x, (i == net.l - 1) ? 10 : fc_size,
+            (i == num_conv + 1) ? square(net.layers[i - 1].conv.n) : fc_size);
+        x->f = (i == net.l - 1) ? &out_actiavtion : &activation;
+
+        for (size_t j = 0; j < x->n; j++)
         {
-            net.layers[net.l - 1].fc.weight[j][k] =
-                rand_double(PARAM_MIN, PARAM_MAX);
+            for (size_t k = 0; k < x->m; k++)
+            {
+                x->weight[j][k] = rand_double(PARAM_MIN, PARAM_MAX);
+            }
+            x->bias[j] = rand_double(PARAM_MIN, PARAM_MAX);
         }
-    }
-
-    for (size_t j = 0; j < net.layers[net.l - 1].fc.n; j++)
-    {
-        net.layers[net.l - 1].fc.bias[j] = rand_double(PARAM_MIN, PARAM_MAX);
     }
 
     return net;

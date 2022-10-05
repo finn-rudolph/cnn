@@ -10,7 +10,8 @@ struct network
     layer *layers;
 };
 
-network network_init(size_t l, size_t m);
+network network_init(
+    size_t num_conv, size_t num_fc, size_t kernel_size, size_t fc_size);
 
 void network_destroy(network *const net);
 
