@@ -97,6 +97,19 @@ static inline void mul_matrix_vector(
     }
 }
 
+static inline void vectorize_matrix(
+    size_t n, size_t m, size_t padding, double *const *const matrix,
+    double *const vector)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        for (size_t j = 0; j < m; j++)
+        {
+            vector[i * m + j] = matrix[i + padding][j + padding];
+        }
+    }
+}
+
 // Suffix _d means derivative. All activation functions are defined for scalars
 // and vectors (prefix v).
 

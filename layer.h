@@ -87,8 +87,4 @@ union layer
     fc_layer fc;
 };
 
-void vectorize_matrix(
-    size_t n, size_t m, size_t padding, double *const *const matrix,
-    double *const vector);
-
 #endif
