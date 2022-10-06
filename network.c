@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <memory.h>
+#include <stdbool.h>
 
 #include "network.h"
 #include "util.h"
@@ -173,6 +174,58 @@ void network_save(network const *const net, char const *const fname)
     fclose(net_f);
 }
 
+double *network_pass_one(
+    network const *const net, uint8_t *const image, double **u, double **v,
+    double *p, double *q, bool store_out)
+{
+    input_layer_pass(&net->layers[0].input, image, u);
+
+    for (size_t i = 1; i < net->l; i++)
+    {
+        layer *x = net->layers + i;
+        switch (x->conv.ltype)
+        {
+        case LTYPE_CONV:
+        {
+            conv_layer_pass(&x->conv, u, v);
+            swap(&u, &v);
+
+            if (store_out)
+            {
+                for (size_t i = 0; i < x->conv.n + x->conv.k - 1; i++)
+                {
+                    memcpy(x->conv.out[i], u[i],
+                           (x->conv.n + x->conv.k - 1) * sizeof(double));
+                }
+            }
+            break;
+        }
+        case LTYPE_FC:
+        {
+            if ((x - 1)->conv.ltype != LTYPE_FC)
+            {
+                // After the first fully connected layer, only such layers
+                // come, therefore switch to vectors instead of matrices.
+                vectorize_matrix((x - 1)->conv.n, (x - 1)->conv.n,
+                                 (x - 1)->conv.k / 2, u, p);
+            }
+            fc_layer_pass(&net->layers[i].fc, p, q);
+            swap(&p, &q);
+
+            if (store_out)
+            {
+                memcpy(x->fc.out, p, x->fc.n * sizeof(double));
+            }
+            break;
+        }
+        }
+    }
+
+    double *result = malloc(10 * sizeof(double));
+    memcpy(result, p, 10 * sizeof(double));
+    return result;
+}
+
 double **network_pass_forward(
     network const *const net, size_t t, uint8_t *const *const images)
 {
@@ -191,43 +244,14 @@ double **network_pass_forward(
     }
 
     double **result = malloc(t * sizeof(double *));
-    for (size_t z = 0; z < t; z++)
+    for (size_t i = 0; i < t; i++)
     {
-        result[z] = malloc(10 * sizeof(double));
+        result[i] = malloc(10 * sizeof(double));
     }
 
-    for (size_t z = 0; z < t; z++)
+    for (size_t i = 0; i < t; i++)
     {
-        input_layer_pass(&net->layers[0].input, images[z], u);
-
-        for (size_t i = 1; i < net->l; i++)
-        {
-            layer *x = net->layers + i;
-            switch (x->conv.ltype)
-            {
-            case LTYPE_CONV:
-            {
-                conv_layer_pass(&x->conv, u, v);
-                swap(&u, &v);
-                break;
-            }
-            case LTYPE_FC:
-            {
-                if ((x - 1)->conv.ltype != LTYPE_FC)
-                {
-                    // After the first fully connected layer, only such layers
-                    // come, therefore switch to vectors instead of matrices.
-                    vectorize_matrix((x - 1)->conv.n, (x - 1)->conv.n,
-                                     (x - 1)->conv.k / 2, u, p);
-                }
-                fc_layer_pass(&net->layers[i].fc, p, q);
-                swap(&p, &q);
-                break;
-            }
-            }
-        }
-
-        memcpy(result[z], p, 10 * sizeof(double));
+        result[i] = network_pass_one(net, images[i], u, v, p, q, 0);
     }
 
     destroy_matrix(grid_size, u);
@@ -237,10 +261,53 @@ double **network_pass_forward(
     return result;
 }
 
+// The delta vector of the last layer must be in p.
+void network_backprop(network const *const net, double **u, double *p)
+{
+}
+
+void network_descend(network const *const net)
+{
+}
+
+// Softmax in combination with the cross entropy cost function is used,
+// therefore computing the loss simplifies dramatically.
+void network_get_loss(double *p, uint8_t label)
+{
+    for (size_t i = 0; i < 10; i++)
+    {
+        p[i] = p[i] - (double)(label == i);
+    }
+}
+
 void network_train(
     network const *const net, size_t r, size_t t, uint8_t *const *const images,
     uint8_t *const labels)
 {
+    size_t const grid_size = 28 + 2 * net->layers[0].input.padding;
+
+    double **u = malloc(grid_size * sizeof(double *)),
+           **v = malloc(grid_size * sizeof(double *)),
+           *p = malloc(square(grid_size) * sizeof(double)),
+           *q = malloc(square(grid_size) * sizeof(double));
+
+    for (size_t i = 0; i < grid_size; i++)
+    {
+        u[i] = malloc(grid_size * sizeof(double));
+        v[i] = malloc(grid_size * sizeof(double));
+    }
+
+    for (size_t e = 0; e < r; e++)
+    {
+        for (size_t i = 0; i < t; i++)
+        {
+            double *result = network_pass_one(net, images[i], u, v, p, q, 1);
+            memcpy(p, result, 10 * sizeof(double));
+            network_get_loss(p, labels[i]);
+            network_backprop(net, u, p);
+        }
+        network_descend(net);
+    }
 }
 
 uint8_t *calc_max_digits(size_t t, double *const *const results)

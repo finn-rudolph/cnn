@@ -1,6 +1,8 @@
 #ifndef NETWORK_H
 #define NETWORK_H 1
 
+#include <stdbool.h>
+
 #include "layer.h"
 
 typedef struct network network;
@@ -13,14 +15,21 @@ struct network
 network network_init(
     size_t num_conv, size_t num_fc, size_t kernel_size, size_t fc_size);
 
+void network_init_backprop(network const *const net);
+
 void network_destroy(network *const net);
 
 network network_read(char const *const fname);
 
 void network_save(network const *const net, char const *const fname);
 
+// If store_out is 1, a call to network_init_backprop must precede.
 double **network_pass_forward(
     network const *const net, size_t t, uint8_t *const *const images);
+
+void network_train(
+    network const *const net, size_t r, size_t t, uint8_t *const *const images,
+    uint8_t *const labels);
 
 void network_save_results(
     char const *const result_fname, size_t t, double *const *const result);

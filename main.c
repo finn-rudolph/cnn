@@ -157,6 +157,24 @@ int main(int argc, char **argv)
     }
     case NET_TRAIN:
     {
+        network net = request_network();
+        size_t a, b;
+        uint8_t **images = request_images(&a, &b);
+        uint8_t *labels = request_labels(a, b);
+
+        char new_fname[100];
+        printf("Output file of the trained network: ");
+        scanf("%s", new_fname);
+        size_t r;
+        printf("Number of training epochs: ");
+        scanf("%zu", &r);
+
+        network_train(&net, r, b - a, images, labels);
+        network_save(&net, new_fname);
+
+        destroy_matrix(b - a, images);
+        free(labels);
+        network_destroy(&net);
         break;
     }
     }
