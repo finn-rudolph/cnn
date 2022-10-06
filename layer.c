@@ -5,8 +5,6 @@
 #include "layer.h"
 #include "util.h"
 
-#define pad(n, k, out) pad_zero(n, k, out)
-
 void input_layer_init(input_layer *const x, size_t n, size_t padding)
 {
     x->ltype = LTYPE_INPUT;
@@ -263,6 +261,15 @@ void fc_layer_pass(fc_layer const *const x, double *const in, double *const out)
     printf("\n\n");
 
 #endif
+}
+
+void conv_layer_backprop(
+    conv_layer *const x, double *const *const in, double *const *const out)
+{
+}
+
+void fc_layer_backprop(fc_layer *const x, double *const in, double *const out)
+{
 }
 
 void input_layer_read(input_layer *const x, FILE *const net_f)

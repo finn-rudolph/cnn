@@ -202,14 +202,14 @@ double *network_pass_one(
         }
         case LTYPE_FC:
         {
-            if ((x - 1)->conv.ltype != LTYPE_FC)
+            if ((x - 1)->conv.ltype == LTYPE_CONV)
             {
                 // After the first fully connected layer, only such layers
                 // come, therefore switch to vectors instead of matrices.
                 vectorize_matrix((x - 1)->conv.n, (x - 1)->conv.n,
                                  (x - 1)->conv.k / 2, u, p);
             }
-            fc_layer_pass(&net->layers[i].fc, p, q);
+            fc_layer_pass(&x->fc, p, q);
             swap(&p, &q);
 
             if (store_out)
@@ -261,9 +261,36 @@ double **network_pass_forward(
     return result;
 }
 
-// The delta vector of the last layer must be in p.
-void network_backprop(network const *const net, double **u, double *p)
+// The delta vector of the last layer must be in the first 10 positions of p.
+void network_backprop(
+    network const *const net, double **u, double **v, double *p, double *q)
 {
+    fc_layer_backprop(&net->layers[net->l - 1].fc, p, q);
+    swap(&p, &q);
+
+    for (size_t i = net->l - 2; i; i--)
+    {
+        layer *x = net->layers + i;
+        switch (x->conv.ltype)
+        {
+        case LTYPE_CONV:
+        {
+            if ((x + 1)->conv.ltype == LTYPE_FC)
+            {
+                vectorize_matrix_inv(x->conv.n, x->conv.n, x->conv.k / 2, p, u);
+            }
+            conv_layer_backprop(&x->conv, u, v);
+            swap(&u, &v);
+            break;
+        }
+        case LTYPE_FC:
+        {
+            fc_layer_backprop(&x->fc, p, q);
+            swap(&p, &q);
+            break;
+        }
+        }
+    }
 }
 
 void network_descend(network const *const net)
@@ -304,7 +331,7 @@ void network_train(
             double *result = network_pass_one(net, images[i], u, v, p, q, 1);
             memcpy(p, result, 10 * sizeof(double));
             network_get_loss(p, labels[i]);
-            network_backprop(net, u, p);
+            network_backprop(net, u, v, p, q);
         }
         network_descend(net);
     }

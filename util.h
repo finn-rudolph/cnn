@@ -110,6 +110,20 @@ static inline void vectorize_matrix(
     }
 }
 
+// Undoes the above function, but leaves the padding uninitialized.
+static inline void vectorize_matrix_inv(
+    size_t n, size_t m, size_t padding, double *const vector,
+    double *const *const matrix)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        for (size_t j = 0; j < m; j++)
+        {
+            matrix[i + padding][j + padding] = vector[i * m + j];
+        }
+    }
+}
+
 // Suffix _d means derivative. All activation functions are defined for scalars
 // and vectors (prefix v).
 

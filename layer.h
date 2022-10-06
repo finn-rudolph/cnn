@@ -53,6 +53,9 @@ void conv_layer_pass(
     conv_layer const *const x, double *const *const in,
     double *const *const out);
 
+void conv_layer_backprop(
+    conv_layer *const x, double *const *const in, double *const *const out);
+
 void conv_layer_read(conv_layer *const x, FILE *const net_f);
 
 void conv_layer_save(conv_layer const *const x, FILE *const net_f);
@@ -74,6 +77,8 @@ void fc_layer_init_backprop(fc_layer *const x);
 void fc_layer_destroy(fc_layer *const);
 
 void fc_layer_pass(fc_layer const *const x, double *const in, double *const out);
+
+void fc_layer_backprop(fc_layer *const x, double *const in, double *const out);
 
 void fc_layer_read(fc_layer *const x, FILE *const net_f);
 
