@@ -47,6 +47,32 @@ void fc_layer_init(fc_layer *const x, size_t n, size_t m)
     x->bias_gradient = 0;
 }
 
+void conv_layer_init_backprop(conv_layer *const x)
+{
+    x->out = malloc((x->n + x->k - 1) * sizeof(double *));
+    for (size_t i = 0; i < x->n + x->k - 1; i++)
+    {
+        x->out[i] = malloc((x->n + x->k - 1) * sizeof(double));
+    }
+
+    x->kernel_gradient = malloc(x->k * sizeof(double *));
+    for (size_t i = 0; i < x->k; i++)
+    {
+        x->kernel_gradient[i] = malloc(x->k * sizeof(double));
+    }
+}
+
+void fc_layer_init_backprop(fc_layer *const x)
+{
+    x->out = malloc(x->n * sizeof(double));
+    x->weight_gradient = malloc(x->n * sizeof(double *));
+    for (size_t i = 0; i < x->n; i++)
+    {
+        x->weight_gradient[i] = malloc(x->m * sizeof(double));
+    }
+    x->bias_gradient = malloc(x->n * sizeof(double));
+}
+
 void conv_layer_destroy(conv_layer *const x)
 {
     for (size_t i = 0; i < x->k; i++)
@@ -58,7 +84,7 @@ void conv_layer_destroy(conv_layer *const x)
     if (x->out)
     {
         // Storing the padding is necessary to compute the kernel gradient.
-        for (size_t i = 0; i < x->n + x->k / 2; i++)
+        for (size_t i = 0; i < x->n + x->k - 1; i++)
         {
             free(x->out[i]);
         }

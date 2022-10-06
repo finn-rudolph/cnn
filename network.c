@@ -54,9 +54,30 @@ network network_init(
     return net;
 }
 
+void network_init_backprop(network const *const net)
+{
+    for (size_t i = 0; i < net->l; i++)
+    {
+        layer *x = net->layers + i;
+        switch (x->conv.ltype)
+        {
+        case LTYPE_INPUT:
+            break;
+
+        case LTYPE_CONV:
+            conv_layer_init_backprop(&x->conv);
+            break;
+
+        case LTYPE_FC:
+            fc_layer_init_backprop(&x->fc);
+            break;
+        }
+    }
+}
+
 void network_destroy(network *const net)
 {
-    for (size_t i = 1; i < net->l; i++)
+    for (size_t i = 0; i < net->l; i++)
     {
         layer *x = net->layers + i;
         switch (x->conv.ltype)
@@ -214,6 +235,12 @@ double **network_pass_forward(
     free(p);
     free(q);
     return result;
+}
+
+void network_train(
+    network const *const net, size_t r, size_t t, uint8_t *const *const images,
+    uint8_t *const labels)
+{
 }
 
 uint8_t *calc_max_digits(size_t t, double *const *const results)
