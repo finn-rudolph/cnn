@@ -17,7 +17,8 @@ void conv_layer_init(conv_layer *const x, size_t n, size_t k)
     x->ltype = LTYPE_CONV;
     x->n = n;
     x->k = k;
-    x->f = &ACTIVATION;
+    x->f = ACTIVATION;
+    x->fd = ACTIVATION_D;
     x->kernel = malloc(k * sizeof(double *));
     for (size_t i = 0; i < k; i++)
     {
@@ -33,7 +34,8 @@ void fc_layer_init(fc_layer *const x, size_t n, size_t m)
     x->ltype = LTYPE_FC;
     x->n = n;
     x->m = m;
-    x->f = &ACTIVATION;
+    x->f = ACTIVATION;
+    x->fd = ACTIVATION_D;
     x->weight = malloc(n * sizeof(double *));
     x->bias = malloc(n * sizeof(double));
     for (size_t i = 0; i < n; i++)
@@ -130,7 +132,7 @@ void fc_layer_destroy(fc_layer *const x)
 
 // Assumes the output of the former layer is layed out such that a margin of
 // half the kernel size just fits in.
-void pad_avg(size_t n, size_t k, double *const *const out)
+void pad_avg(size_t n, size_t k, double *const *const matrix)
 {
     size_t const s = k / 2;
 
@@ -139,30 +141,30 @@ void pad_avg(size_t n, size_t k, double *const *const out)
         // Extend sides.
         for (size_t j = s - d; j < n + s + d; j++)
         {
-            out[s - d - 1][j] = out[s - d][j];
-            out[n + s + d][j] = out[n + s + d - 1][j];
+            matrix[s - d - 1][j] = matrix[s - d][j];
+            matrix[n + s + d][j] = matrix[n + s + d - 1][j];
         }
 
         for (size_t i = s - d; i < n + s + d; i++)
         {
-            out[i][s - d - 1] = out[i][s - d];
-            out[i][n + s + d] = out[i][n + s + d - 1];
+            matrix[i][s - d - 1] = matrix[i][s - d];
+            matrix[i][n + s + d] = matrix[i][n + s + d - 1];
         }
 
         // Fill corners.
-        out[s - d - 1][s - d - 1] =
-            (out[s - d - 1][s - d] + out[s - d][s - d - 1]) / 2.0;
-        out[s - d - 1][n + s + d] =
-            (out[s - d - 1][n + s + d - 1] + out[s - d][n + s + d]) / 2.0;
-        out[n + s + d][s - d - 1] =
-            (out[n + s + d][s - d] + out[n + s + d - 1][s - d - 1]) / 2.0;
-        out[n + s + d][n + s + d] =
-            (out[n + s + d][n + s + d - 1] + out[n + s + d - 1][n + s + d]) /
+        matrix[s - d - 1][s - d - 1] =
+            (matrix[s - d - 1][s - d] + matrix[s - d][s - d - 1]) / 2.0;
+        matrix[s - d - 1][n + s + d] =
+            (matrix[s - d - 1][n + s + d - 1] + matrix[s - d][n + s + d]) / 2.0;
+        matrix[n + s + d][s - d - 1] =
+            (matrix[n + s + d][s - d] + matrix[n + s + d - 1][s - d - 1]) / 2.0;
+        matrix[n + s + d][n + s + d] =
+            (matrix[n + s + d][n + s + d - 1] + matrix[n + s + d - 1][n + s + d]) /
             2.0;
     }
 }
 
-void pad_zero(size_t n, size_t k, double *const *out)
+void pad_zero(size_t n, size_t k, double *const *const matrix)
 {
     size_t const s = k / 2;
 
@@ -170,20 +172,20 @@ void pad_zero(size_t n, size_t k, double *const *out)
     {
         for (size_t j = s - d; j < n + s + d; j++)
         {
-            out[s - d - 1][j] = 0.0;
-            out[n + s + d][j] = 0.0;
+            matrix[s - d - 1][j] = 0.0;
+            matrix[n + s + d][j] = 0.0;
         }
 
         for (size_t i = s - d; i < n + s + d; i++)
         {
-            out[i][s - d - 1] = 0.0;
-            out[i][n + s + d] = 0.0;
+            matrix[i][s - d - 1] = 0.0;
+            matrix[i][n + s + d] = 0.0;
         }
 
-        out[s - d - 1][s - d - 1] = 0.0;
-        out[s - d - 1][n + s + d] = 0.0;
-        out[n + s + d][s - d - 1] = 0.0;
-        out[n + s + d][n + s + d] = 0.0;
+        matrix[s - d - 1][s - d - 1] = 0.0;
+        matrix[s - d - 1][n + s + d] = 0.0;
+        matrix[n + s + d][s - d - 1] = 0.0;
+        matrix[n + s + d][n + s + d] = 0.0;
     }
 }
 
@@ -264,12 +266,60 @@ void fc_layer_pass(fc_layer const *const x, double *const in, double *const out)
 }
 
 void conv_layer_backprop(
-    conv_layer *const x, double *const *const in, double *const *const out)
+    conv_layer const *const x, double *const *const delta,
+    double *const *const ndelta)
 {
+    pad(x->n, x->k, delta);
 }
 
-void fc_layer_backprop(fc_layer *const x, double *const in, double *const out)
+void fc_layer_backprop(
+    fc_layer const *const x, double *const prev_in, double *const prev_out,
+    double *const delta, double *const ndelta)
 {
+    for (size_t i = 0; i < x->n; i++)
+    {
+        for (size_t j = 0; j < x->m; j++)
+        {
+            x->weight_gradient[i][j] += prev_out[j] * delta[i];
+        }
+        x->bias_gradient[i] += delta[i];
+    }
+
+    for (size_t j = 0; j < x->m; j++)
+    {
+        ndelta[j] = 0.0;
+        for (size_t i = 0; i < x->n; i++)
+        {
+            ndelta[j] += delta[i] * x->weight[i][j];
+        }
+        double z = prev_in[j];
+        x->fd(1, &z);
+        ndelta[j] *= z;
+    }
+}
+
+void conv_layer_avg_gradient(conv_layer *const x, size_t t)
+{
+    for (size_t i = 0; i < x->k; i++)
+    {
+        for (size_t j = 0; j < x->k; j++)
+        {
+            x->kernel_gradient[i][j] /= t;
+        }
+    }
+    x->bias_gradient /= t;
+}
+
+void fc_layer_avg_gradient(fc_layer const *const x, size_t t)
+{
+    for (size_t i = 0; i < x->n; i++)
+    {
+        for (size_t j = 0; j < x->m; j++)
+        {
+            x->weight_gradient[i][j] /= t;
+        }
+        x->bias_gradient[i] /= t;
+    }
 }
 
 void input_layer_read(input_layer *const x, FILE *const net_f)

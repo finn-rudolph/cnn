@@ -20,6 +20,7 @@ struct input_layer
 {
     uint8_t ltype;
     size_t n, padding;
+    double **out;
 };
 
 void input_layer_init(input_layer *const x, size_t n, size_t padding);
@@ -39,7 +40,7 @@ struct conv_layer
     size_t n, k; // layer and kernel size
     double bias;
     double **kernel;
-    activation_fn f;
+    activation_fn f, fd;
     double **out, **kernel_gradient, bias_gradient; // buffers for backpropagation
 };
 
@@ -54,7 +55,10 @@ void conv_layer_pass(
     double *const *const out);
 
 void conv_layer_backprop(
-    conv_layer *const x, double *const *const in, double *const *const out);
+    conv_layer const *const x, double *const *const delta,
+    double *const *const ndelta);
+
+void conv_layer_avg_gradient(conv_layer *const x, size_t t);
 
 void conv_layer_read(conv_layer *const x, FILE *const net_f);
 
@@ -66,7 +70,7 @@ struct fc_layer
     uint8_t ltype;
     size_t n, m; // number of nodes in this and the previous layer
     double **weight, *bias;
-    activation_fn f;
+    activation_fn f, fd;
     double *out, **weight_gradient, *bias_gradient;
 };
 
@@ -78,7 +82,11 @@ void fc_layer_destroy(fc_layer *const);
 
 void fc_layer_pass(fc_layer const *const x, double *const in, double *const out);
 
-void fc_layer_backprop(fc_layer *const x, double *const in, double *const out);
+void fc_layer_backprop(
+    fc_layer const *const x, double *const prev_in, double *const prev_out,
+    double *const delta, double *const ndelta);
+
+void fc_layer_avg_gradient(fc_layer const *const x, size_t t);
 
 void fc_layer_read(fc_layer *const x, FILE *const net_f);
 
