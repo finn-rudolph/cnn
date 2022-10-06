@@ -1,5 +1,5 @@
-#ifndef FILE_IO_H
-#define FILE_IO_H 1
+#ifndef DATA_IO_H
+#define DATA_IO_H 1
 
 #include <stdio.h>
 #include <stdint.h>

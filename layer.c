@@ -17,7 +17,7 @@ void conv_layer_init(conv_layer *const x, size_t n, size_t k)
     x->ltype = LTYPE_CONV;
     x->n = n;
     x->k = k;
-    x->f = &activation;
+    x->f = &ACTIVATION;
     x->kernel = malloc(k * sizeof(double *));
     for (size_t i = 0; i < k; i++)
     {
@@ -33,7 +33,7 @@ void fc_layer_init(fc_layer *const x, size_t n, size_t m)
     x->ltype = LTYPE_FC;
     x->n = n;
     x->m = m;
-    x->f = &activation;
+    x->f = &ACTIVATION;
     x->weight = malloc(n * sizeof(double *));
     x->bias = malloc(n * sizeof(double));
     for (size_t i = 0; i < n; i++)

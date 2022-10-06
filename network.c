@@ -7,9 +7,6 @@
 #include "util.h"
 #include "def.h"
 
-#define PARAM_MIN -1.0
-#define PARAM_MAX 1.0
-
 network network_init(
     size_t num_conv, size_t num_fc, size_t kernel_size, size_t fc_size)
 {
@@ -40,7 +37,7 @@ network network_init(
         fc_layer_init(
             x, (i == net.l - 1) ? 10 : fc_size,
             (i == num_conv + 1) ? square(net.layers[i - 1].conv.n) : fc_size);
-        x->f = (i == net.l - 1) ? &out_actiavtion : &activation;
+        x->f = (i == net.l - 1) ? &OUT_ACTIVATION : &ACTIVATION;
 
         for (size_t j = 0; j < x->n; j++)
         {
@@ -134,7 +131,7 @@ network network_read(char const *const fname)
         }
     }
 
-    net.layers[net.l - 1].fc.f = &out_actiavtion;
+    net.layers[net.l - 1].fc.f = &OUT_ACTIVATION;
     return net;
 }
 
