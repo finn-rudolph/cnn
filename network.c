@@ -369,7 +369,8 @@ void network_backprop(
         {
         case LTYPE_CONV:
         {
-            conv_layer_backprop(&x->conv, u, v);
+            conv_layer_backprop(
+                &x->conv, mget_prev_in(net, i), mget_prev_out(net, i), u, v);
             swap(&u, &v);
             break;
         }
@@ -437,6 +438,7 @@ void network_train(
             switch (x->conv.ltype)
             {
             case LTYPE_INPUT:
+            case LTYPE_FLAT:
                 break;
 
             case LTYPE_CONV:
@@ -445,9 +447,6 @@ void network_train(
 
             case LTYPE_FC:
                 fc_layer_avg_gradient(&x->fc, t);
-                break;
-
-            case LTYPE_FLAT:
                 break;
             }
         }

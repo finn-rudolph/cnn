@@ -64,6 +64,20 @@ void pad_zero(size_t n, size_t k, double *const *const matrix)
     }
 }
 
+// Neither creates a new matrix nor modifies the given. Only an array of
+// pointers indented by the size of the padding at each row is returned.
+double **remove_padding(size_t n, size_t padding, double *const *const matrix)
+{
+    double **nmatrix = malloc(n * sizeof(double *));
+
+    for (size_t i = 0; i < n; i++)
+    {
+        nmatrix[i] = matrix[i + padding] + padding;
+    }
+
+    return nmatrix;
+}
+
 void input_layer_init(input_layer *const x, size_t n, size_t padding)
 {
     x->ltype = LTYPE_INPUT;
@@ -123,7 +137,7 @@ void conv_layer_init(conv_layer *const x, size_t n, size_t k)
     x->in = 0;
     x->out = 0;
     x->kernel_gradient = 0;
-    x->bias_gradient = 0;
+    x->bias_gradient = 0.0;
 }
 
 void conv_layer_init_backprop(conv_layer *const x)
@@ -146,6 +160,7 @@ void conv_layer_init_backprop(conv_layer *const x)
     {
         x->kernel_gradient[i] = malloc(x->k * sizeof(double));
     }
+    x->bias_gradient = 0.0;
 }
 
 void conv_layer_destroy(conv_layer *const x)
@@ -188,7 +203,7 @@ void conv_layer_pass(
     conv_layer const *const x, double *const *const in,
     double *const *const out, bool store_intermed)
 {
-    convolve(x->n, x->k, in, out, x->kernel);
+    convolve(x->n + x->k - 1, x->k, in, out, x->kernel, 0);
 
     size_t const s = x->k / 2;
     for (size_t i = s; i < x->n + s; i++)
@@ -238,10 +253,39 @@ void conv_layer_pass(
 }
 
 void conv_layer_backprop(
-    conv_layer const *const x, double *const *const delta,
+    conv_layer *const x, double *const *const prev_in,
+    double *const *const prev_out, double *const *const delta,
     double *const *const ndelta)
 {
     pad(x->n, x->k, delta);
+
+    double **delta_kernel = remove_padding(x->n, x->k / 2, delta);
+    convolve(
+        x->n + x->k - 1, x->n, prev_out, x->kernel_gradient, delta_kernel, 1);
+
+    for (size_t i = 0; i < x->n; i++)
+    {
+        for (size_t j = 0; j < x->n; j++)
+        {
+            x->bias_gradient += delta[i + x->k / 2][j + x->k / 2];
+        }
+    }
+
+    double **flipped_kernel = flip_kernel(x->k, x->kernel);
+    convolve(x->n + x->k - 1, x->k, delta, ndelta, flipped_kernel, 0);
+
+    for (size_t i = 0; i < x->n; i++)
+    {
+        for (size_t j = 0; j < x->n; j++)
+        {
+            double z = prev_in[i][j];
+            (*x->fd)(1, &z);
+            ndelta[i + x->k / 2][j + x->k / 2] *= z;
+        }
+    }
+
+    free(delta_kernel);
+    destroy_matrix(x->k, flipped_kernel);
 }
 
 void conv_layer_avg_gradient(conv_layer *const x, size_t t)

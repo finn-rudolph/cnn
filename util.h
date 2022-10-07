@@ -98,8 +98,27 @@ static inline void mul_matrix_vector(
     }
 }
 
-// Suffix _d means derivative. All activation functions are defined for scalars
-// and vectors (prefix v).
+static inline double **flip_kernel(size_t k, double *const *const kernel)
+{
+    double **flipped = malloc(k * sizeof(double *));
+    for (size_t i = 0; i < k; i++)
+    {
+        flipped[i] = malloc(k * sizeof(double));
+    }
+
+    for (size_t i = 0; i < k; i++)
+    {
+        for (size_t j = 0; j < k; j++)
+        {
+            flipped[i][j] = kernel[k - i - 1][k - j - 1];
+        }
+    }
+
+    return flipped;
+}
+
+// Suffix _d means derivative. Prefix v means the function uses a vector, not
+// only a scalar.
 
 static inline double relu(double x)
 {

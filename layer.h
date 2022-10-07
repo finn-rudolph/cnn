@@ -57,7 +57,8 @@ void conv_layer_pass(
     double *const *const out, bool store_intermed);
 
 void conv_layer_backprop(
-    conv_layer const *const x, double *const *const delta,
+    conv_layer *const x, double *const *const prev_in,
+    double *const *const prev_out, double *const *const delta,
     double *const *const ndelta);
 
 void conv_layer_avg_gradient(conv_layer *const x, size_t t);
