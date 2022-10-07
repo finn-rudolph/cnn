@@ -50,6 +50,8 @@ void conv_layer_init(conv_layer *const x, size_t n, size_t k);
 
 void conv_layer_init_backprop(conv_layer *const x);
 
+void conv_layer_reset_gradient(conv_layer *const x);
+
 void conv_layer_destroy(conv_layer *const x);
 
 void conv_layer_pass(
@@ -83,6 +85,8 @@ struct fc_layer
 void fc_layer_init(fc_layer *const x, size_t n, size_t m);
 
 void fc_layer_init_backprop(fc_layer *const x);
+
+void fc_layer_reset_gradient(fc_layer *const x);
 
 void fc_layer_destroy(fc_layer *const);
 

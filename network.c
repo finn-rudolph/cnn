@@ -282,6 +282,51 @@ double **network_pass_forward(
     return result;
 }
 
+// Resets the buffers of all layers storing the accumulated gradient to 0.
+void network_reset_gradient(network const *const net)
+{
+    for (size_t i = 0; i < net->l; i++)
+    {
+        layer *x = net->layers + i;
+        switch (x->conv.ltype)
+        {
+        case LTYPE_INPUT:
+        case LTYPE_FLAT:
+            break;
+
+        case LTYPE_CONV:
+            conv_layer_reset_gradient(&x->conv);
+            break;
+
+        case LTYPE_FC:
+            fc_layer_reset_gradient(&x->fc);
+            break;
+        }
+    }
+}
+
+void network_avg_gradient(network const *const net, size_t t)
+{
+    for (size_t i = 0; i < net->l; i++)
+    {
+        layer *x = net->layers + i;
+        switch (x->conv.ltype)
+        {
+        case LTYPE_INPUT:
+        case LTYPE_FLAT:
+            break;
+
+        case LTYPE_CONV:
+            conv_layer_avg_gradient(&x->conv, t);
+            break;
+
+        case LTYPE_FC:
+            fc_layer_avg_gradient(&x->fc, t);
+            break;
+        }
+    }
+}
+
 double *vget_prev_in(network const *const net, size_t i)
 {
     layer *x = net->layers + i - 1;
@@ -441,34 +486,18 @@ void network_train(
 
     for (size_t e = 0; e < r; e++)
     {
+        network_reset_gradient(net);
+
         for (size_t i = 0; i < t; i++)
         {
             double *result = network_pass_one(net, images[i], u, v, p, q, 1);
             memcpy(p, result, 10 * sizeof(double));
+
             network_get_loss(p, labels[i]);
             network_backprop(net, u, v, p, q);
         }
 
-        for (size_t i = 0; i < net->l; i++)
-        {
-            layer *x = net->layers + i;
-
-            switch (x->conv.ltype)
-            {
-            case LTYPE_INPUT:
-            case LTYPE_FLAT:
-                break;
-
-            case LTYPE_CONV:
-                conv_layer_avg_gradient(&x->conv, t);
-                break;
-
-            case LTYPE_FC:
-                fc_layer_avg_gradient(&x->fc, t);
-                break;
-            }
-        }
-
+        network_avg_gradient(net, t);
         network_descend(net);
     }
 

@@ -163,6 +163,18 @@ void conv_layer_init_backprop(conv_layer *const x)
     x->bias_gradient = 0.0;
 }
 
+void conv_layer_reset_gradient(conv_layer *const x)
+{
+    for (size_t i = 0; i < x->k; i++)
+    {
+        for (size_t j = 0; j < x->k; j++)
+        {
+            x->kernel_gradient[i][j] = 0.0;
+        }
+    }
+    x->bias_gradient = 0.0;
+}
+
 void conv_layer_destroy(conv_layer *const x)
 {
     for (size_t i = 0; i < x->k; i++)
@@ -371,6 +383,18 @@ void fc_layer_init_backprop(fc_layer *const x)
         x->weight_gradient[i] = malloc(x->m * sizeof(double));
     }
     x->bias_gradient = malloc(x->n * sizeof(double));
+}
+
+void fc_layer_reset_gradient(fc_layer *const x)
+{
+    for (size_t i = 0; i < x->n; i++)
+    {
+        for (size_t j = 0; j < x->m; j++)
+        {
+            x->weight_gradient[i][j] = 0.0;
+        }
+        x->bias_gradient[i] = 0.0;
+    }
 }
 
 void fc_layer_destroy(fc_layer *const x)
