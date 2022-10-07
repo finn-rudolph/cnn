@@ -300,6 +300,18 @@ void conv_layer_avg_gradient(conv_layer *const x, size_t t)
     x->bias_gradient /= t;
 }
 
+void conv_layer_descend(conv_layer *const x)
+{
+    for (size_t i = 0; i < x->k; i++)
+    {
+        for (size_t j = 0; j < x->k; j++)
+        {
+            x->kernel[i][j] += x->kernel_gradient[i][j] * LEARN_RATE;
+        }
+    }
+    x->bias += x->bias_gradient * LEARN_RATE;
+}
+
 void conv_layer_read(conv_layer *const x, FILE *const net_f)
 {
     fscanf(net_f, "%zu %zu %lg", &x->n, &x->k, &x->bias);
@@ -464,6 +476,18 @@ void fc_layer_avg_gradient(fc_layer const *const x, size_t t)
             x->weight_gradient[i][j] /= t;
         }
         x->bias_gradient[i] /= t;
+    }
+}
+
+void fc_layer_descend(fc_layer *const x)
+{
+    for (size_t i = 0; i < x->n; i++)
+    {
+        for (size_t j = 0; j < x->m; j++)
+        {
+            x->weight[i][j] += x->weight_gradient[i][j] * LEARN_RATE;
+        }
+        x->bias[i] += x->bias_gradient[i] * LEARN_RATE;
     }
 }
 

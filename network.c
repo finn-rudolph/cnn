@@ -392,6 +392,24 @@ void network_backprop(
 
 void network_descend(network const *const net)
 {
+    for (size_t i = 0; i < net->l; i++)
+    {
+        layer *x = net->layers + i;
+        switch (x->conv.ltype)
+        {
+        case LTYPE_INPUT:
+        case LTYPE_FLAT:
+            break;
+
+        case LTYPE_CONV:
+            conv_layer_descend(&x->conv);
+            break;
+
+        case LTYPE_FC:
+            fc_layer_descend(&x->fc);
+            break;
+        }
+    }
 }
 
 // Softmax in combination with the cross entropy cost function is used,

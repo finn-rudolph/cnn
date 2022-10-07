@@ -63,6 +63,8 @@ void conv_layer_backprop(
 
 void conv_layer_avg_gradient(conv_layer *const x, size_t t);
 
+void conv_layer_descend(conv_layer *const x);
+
 void conv_layer_read(conv_layer *const x, FILE *const net_f);
 
 void conv_layer_save(conv_layer const *const x, FILE *const net_f);
@@ -93,6 +95,8 @@ void fc_layer_backprop(
     double *const delta, double *const ndelta);
 
 void fc_layer_avg_gradient(fc_layer const *const x, size_t t);
+
+void fc_layer_descend(fc_layer *const x);
 
 void fc_layer_read(fc_layer *const x, FILE *const net_f);
 
