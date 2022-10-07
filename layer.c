@@ -119,6 +119,8 @@ void conv_layer_init(conv_layer *const x, size_t n, size_t k)
     {
         x->kernel[i] = malloc(k * sizeof(double));
     }
+
+    x->in = 0;
     x->out = 0;
     x->kernel_gradient = 0;
     x->bias_gradient = 0;
@@ -126,6 +128,13 @@ void conv_layer_init(conv_layer *const x, size_t n, size_t k)
 
 void conv_layer_init_backprop(conv_layer *const x)
 {
+    x->in = malloc(x->n * sizeof(double *));
+    for (size_t i = 0; i < x->n; i++)
+    {
+        x->in[i] = malloc(x->n * sizeof(double));
+    }
+
+    // Padding size is added, as padding is necessary to compute the gradient.
     x->out = malloc((x->n + x->k - 1) * sizeof(double *));
     for (size_t i = 0; i < x->n + x->k - 1; i++)
     {
@@ -147,9 +156,17 @@ void conv_layer_destroy(conv_layer *const x)
     }
     free(x->kernel);
 
+    if (x->in)
+    {
+        for (size_t i = 0; i < x->n; i++)
+        {
+            free(x->in[i]);
+        }
+        free(x->in);
+    }
+
     if (x->out)
     {
-        // Storing the padding is necessary to compute the kernel gradient.
         for (size_t i = 0; i < x->n + x->k - 1; i++)
         {
             free(x->out[i]);
@@ -169,9 +186,10 @@ void conv_layer_destroy(conv_layer *const x)
 
 void conv_layer_pass(
     conv_layer const *const x, double *const *const in,
-    double *const *const out)
+    double *const *const out, bool store_intermed)
 {
     convolve(x->n, x->k, in, out, x->kernel);
+
     size_t const s = x->k / 2;
     for (size_t i = s; i < x->n + s; i++)
     {
@@ -179,9 +197,30 @@ void conv_layer_pass(
         {
             out[i][j] += x->bias;
         }
+    }
+
+    if (store_intermed)
+    {
+        for (size_t i = s; i < x->n + s; i++)
+        {
+            memcpy(x->in, out[i] + s, x->n * sizeof(double));
+        }
+    }
+
+    for (size_t i = s; i < x->n + s; i++)
+    {
         (*x->f)(x->n, out[i] + s);
     }
+
     pad(x->n, x->k, out);
+
+    if (store_intermed)
+    {
+        for (size_t i = 0; i < x->n + x->k - 1; i++)
+        {
+            memcpy(x->out, out[i], (x->n + x->k - 1) * sizeof(double));
+        }
+    }
 
 #ifdef DEBUG_MODE
 
@@ -258,6 +297,8 @@ void fc_layer_init(fc_layer *const x, size_t n, size_t m)
     {
         x->weight[i] = malloc(m * sizeof(double));
     }
+
+    x->in = 0;
     x->out = 0;
     x->weight_gradient = 0;
     x->bias_gradient = 0;
@@ -266,6 +307,8 @@ void fc_layer_init(fc_layer *const x, size_t n, size_t m)
 void fc_layer_init_backprop(fc_layer *const x)
 {
     x->out = malloc(x->n * sizeof(double));
+    x->in = malloc(x->n * sizeof(double));
+
     x->weight_gradient = malloc(x->n * sizeof(double *));
     for (size_t i = 0; i < x->n; i++)
     {
@@ -282,6 +325,11 @@ void fc_layer_destroy(fc_layer *const x)
     }
     free(x->weight);
     free(x->bias);
+
+    if (x->in)
+    {
+        free(x->in);
+    }
 
     if (x->out)
     {
@@ -303,14 +351,28 @@ void fc_layer_destroy(fc_layer *const x)
     }
 }
 
-void fc_layer_pass(fc_layer const *const x, double *const in, double *const out)
+void fc_layer_pass(
+    fc_layer const *const x, double *const in, double *const out,
+    bool store_intermed)
 {
     mul_matrix_vector(x->n, x->m, in, x->weight, out);
+
     for (size_t i = 0; i < x->n; i++)
     {
         out[i] += x->bias[i];
     }
+
+    if (store_intermed)
+    {
+        memcpy(x->in, out, x->n * sizeof(double));
+    }
+
     (*x->f)(x->n, out);
+
+    if (store_intermed)
+    {
+        memcpy(x->out, out, x->n * sizeof(double));
+    }
 
 #ifdef DEBUG_MODE
 

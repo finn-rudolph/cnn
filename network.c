@@ -203,7 +203,7 @@ void network_save(network const *const net, char const *const fname)
 
 double *network_pass_one(
     network const *const net, uint8_t *const image, double **u, double **v,
-    double *p, double *q, bool store_out)
+    double *p, double *q, bool store_intermed)
 {
     input_layer_pass(&net->layers[0].input, image, u);
 
@@ -214,36 +214,28 @@ double *network_pass_one(
         {
         case LTYPE_CONV:
         {
-            conv_layer_pass(&x->conv, u, v);
+            conv_layer_pass(&x->conv, u, v, store_intermed);
             swap(&u, &v);
-
-            if (store_out)
-            {
-                for (size_t i = 0; i < x->conv.n + x->conv.k - 1; i++)
-                {
-                    memcpy(x->conv.out[i], u[i],
-                           (x->conv.n + x->conv.k - 1) * sizeof(double));
-                }
-            }
             break;
         }
         case LTYPE_FC:
         {
-            fc_layer_pass(&x->fc, p, q);
+            fc_layer_pass(&x->fc, p, q, store_intermed);
             swap(&p, &q);
-
-            if (store_out)
-            {
-                memcpy(x->fc.out, p, x->fc.n * sizeof(double));
-            }
             break;
         }
         case LTYPE_FLAT:
         {
             flat_layer_pass(&x->flat, u, p);
-
-            if (store_out)
+            if (store_intermed)
             {
+                for (size_t i = 0; i < x->flat.n; i++)
+                {
+                    memcpy(
+                        x->flat.in + i * x->flat.n, (x - 1)->conv.in[i],
+                        x->flat.n * sizeof(double));
+                }
+                memcpy(x->flat.out, p, square(x->flat.n) * sizeof(double));
             }
             break;
         }
