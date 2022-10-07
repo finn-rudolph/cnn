@@ -382,7 +382,7 @@ void network_backprop(
         }
         case LTYPE_FLAT:
         {
-            flat_layer_backprop(&x->flat);
+            flat_layer_backprop(&x->flat, p, u);
             break;
         }
         }

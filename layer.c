@@ -406,7 +406,7 @@ void fc_layer_backprop(
             ndelta[j] += delta[i] * x->weight[i][j];
         }
         double z = prev_in[j];
-        x->fd(1, &z);
+        (*x->fd)(1, &z);
         ndelta[j] *= z;
     }
 }
@@ -501,8 +501,16 @@ void flat_layer_pass(
     }
 }
 
-void flat_layer_backprop(flat_layer const *const x)
+void flat_layer_backprop(
+    flat_layer const *const x, double *const delta, double *const *const ndelta)
 {
+    for (size_t i = 0; i < x->n; i++)
+    {
+        for (size_t j = 0; j < x->n; j++)
+        {
+            ndelta[i + x->padding][j + x->padding] = delta[i * x->n + j];
+        }
+    }
 }
 
 void flat_layer_read(flat_layer *const x, FILE *const net_f)

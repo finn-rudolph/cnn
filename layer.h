@@ -114,7 +114,8 @@ void flat_layer_destroy(flat_layer *const x);
 void flat_layer_pass(
     flat_layer const *const x, double *const *const in, double *const out);
 
-void flat_layer_backprop(flat_layer const *const x);
+void flat_layer_backprop(
+    flat_layer const *const x, double *const delta, double *const *const ndelta);
 
 void flat_layer_read(flat_layer *const x, FILE *const net_f);
 
