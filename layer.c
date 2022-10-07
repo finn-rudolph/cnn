@@ -5,131 +5,6 @@
 #include "layer.h"
 #include "util.h"
 
-void input_layer_init(input_layer *const x, size_t n, size_t padding)
-{
-    x->ltype = LTYPE_INPUT;
-    x->n = n;
-    x->padding = padding;
-}
-
-void conv_layer_init(conv_layer *const x, size_t n, size_t k)
-{
-    x->ltype = LTYPE_CONV;
-    x->n = n;
-    x->k = k;
-    x->f = ACTIVATION;
-    x->fd = ACTIVATION_D;
-    x->kernel = malloc(k * sizeof(double *));
-    for (size_t i = 0; i < k; i++)
-    {
-        x->kernel[i] = malloc(k * sizeof(double));
-    }
-    x->out = 0;
-    x->kernel_gradient = 0;
-    x->bias_gradient = 0;
-}
-
-void fc_layer_init(fc_layer *const x, size_t n, size_t m)
-{
-    x->ltype = LTYPE_FC;
-    x->n = n;
-    x->m = m;
-    x->f = ACTIVATION;
-    x->fd = ACTIVATION_D;
-    x->weight = malloc(n * sizeof(double *));
-    x->bias = malloc(n * sizeof(double));
-    for (size_t i = 0; i < n; i++)
-    {
-        x->weight[i] = malloc(m * sizeof(double));
-    }
-    x->out = 0;
-    x->weight_gradient = 0;
-    x->bias_gradient = 0;
-}
-
-void conv_layer_init_backprop(conv_layer *const x)
-{
-    x->out = malloc((x->n + x->k - 1) * sizeof(double *));
-    for (size_t i = 0; i < x->n + x->k - 1; i++)
-    {
-        x->out[i] = malloc((x->n + x->k - 1) * sizeof(double));
-    }
-
-    x->kernel_gradient = malloc(x->k * sizeof(double *));
-    for (size_t i = 0; i < x->k; i++)
-    {
-        x->kernel_gradient[i] = malloc(x->k * sizeof(double));
-    }
-}
-
-void fc_layer_init_backprop(fc_layer *const x)
-{
-    x->out = malloc(x->n * sizeof(double));
-    x->weight_gradient = malloc(x->n * sizeof(double *));
-    for (size_t i = 0; i < x->n; i++)
-    {
-        x->weight_gradient[i] = malloc(x->m * sizeof(double));
-    }
-    x->bias_gradient = malloc(x->n * sizeof(double));
-}
-
-void conv_layer_destroy(conv_layer *const x)
-{
-    for (size_t i = 0; i < x->k; i++)
-    {
-        free(x->kernel[i]);
-    }
-    free(x->kernel);
-
-    if (x->out)
-    {
-        // Storing the padding is necessary to compute the kernel gradient.
-        for (size_t i = 0; i < x->n + x->k - 1; i++)
-        {
-            free(x->out[i]);
-        }
-        free(x->out);
-    }
-
-    if (x->kernel_gradient)
-    {
-        for (size_t i = 0; i < x->k; i++)
-        {
-            free(x->kernel_gradient[i]);
-        }
-        free(x->kernel_gradient);
-    }
-}
-
-void fc_layer_destroy(fc_layer *const x)
-{
-    for (size_t i = 0; i < x->n; i++)
-    {
-        free(x->weight[i]);
-    }
-    free(x->weight);
-    free(x->bias);
-
-    if (x->out)
-    {
-        free(x->out);
-    }
-
-    if (x->weight_gradient)
-    {
-        for (size_t i = 0; i < x->n; i++)
-        {
-            free(x->weight_gradient[i]);
-        }
-        free(x->weight_gradient);
-    }
-
-    if (x->bias_gradient)
-    {
-        free(x->bias_gradient);
-    }
-}
-
 // Assumes the output of the former layer is layed out such that a margin of
 // half the kernel size just fits in.
 void pad_avg(size_t n, size_t k, double *const *const matrix)
@@ -189,6 +64,13 @@ void pad_zero(size_t n, size_t k, double *const *const matrix)
     }
 }
 
+void input_layer_init(input_layer *const x, size_t n, size_t padding)
+{
+    x->ltype = LTYPE_INPUT;
+    x->n = n;
+    x->padding = padding;
+}
+
 void input_layer_pass(
     input_layer const *const x, uint8_t const *const image,
     double *const *const out)
@@ -212,6 +94,77 @@ void input_layer_pass(
     putchar('\n');
 
 #endif
+}
+
+void input_layer_read(input_layer *const x, FILE *const net_f)
+{
+    fscanf(net_f, "%zu %zu", &x->n, &x->padding);
+    input_layer_init(x, x->n, x->padding);
+}
+
+void input_layer_save(input_layer const *const x, FILE *const net_f)
+{
+    fprintf(net_f, "%zu %zu\n", x->n, x->padding);
+}
+
+void conv_layer_init(conv_layer *const x, size_t n, size_t k)
+{
+    x->ltype = LTYPE_CONV;
+    x->n = n;
+    x->k = k;
+    x->f = ACTIVATION;
+    x->fd = ACTIVATION_D;
+    x->kernel = malloc(k * sizeof(double *));
+    for (size_t i = 0; i < k; i++)
+    {
+        x->kernel[i] = malloc(k * sizeof(double));
+    }
+    x->out = 0;
+    x->kernel_gradient = 0;
+    x->bias_gradient = 0;
+}
+
+void conv_layer_init_backprop(conv_layer *const x)
+{
+    x->out = malloc((x->n + x->k - 1) * sizeof(double *));
+    for (size_t i = 0; i < x->n + x->k - 1; i++)
+    {
+        x->out[i] = malloc((x->n + x->k - 1) * sizeof(double));
+    }
+
+    x->kernel_gradient = malloc(x->k * sizeof(double *));
+    for (size_t i = 0; i < x->k; i++)
+    {
+        x->kernel_gradient[i] = malloc(x->k * sizeof(double));
+    }
+}
+
+void conv_layer_destroy(conv_layer *const x)
+{
+    for (size_t i = 0; i < x->k; i++)
+    {
+        free(x->kernel[i]);
+    }
+    free(x->kernel);
+
+    if (x->out)
+    {
+        // Storing the padding is necessary to compute the kernel gradient.
+        for (size_t i = 0; i < x->n + x->k - 1; i++)
+        {
+            free(x->out[i]);
+        }
+        free(x->out);
+    }
+
+    if (x->kernel_gradient)
+    {
+        for (size_t i = 0; i < x->k; i++)
+        {
+            free(x->kernel_gradient[i]);
+        }
+        free(x->kernel_gradient);
+    }
 }
 
 void conv_layer_pass(
@@ -245,6 +198,111 @@ void conv_layer_pass(
 #endif
 }
 
+void conv_layer_backprop(
+    conv_layer const *const x, double *const *const delta,
+    double *const *const ndelta)
+{
+    pad(x->n, x->k, delta);
+}
+
+void conv_layer_avg_gradient(conv_layer *const x, size_t t)
+{
+    for (size_t i = 0; i < x->k; i++)
+    {
+        for (size_t j = 0; j < x->k; j++)
+        {
+            x->kernel_gradient[i][j] /= t;
+        }
+    }
+    x->bias_gradient /= t;
+}
+
+void conv_layer_read(conv_layer *const x, FILE *const net_f)
+{
+    fscanf(net_f, "%zu %zu %lg", &x->n, &x->k, &x->bias);
+    conv_layer_init(x, x->n, x->k);
+
+    for (size_t i = 0; i < x->k; i++)
+    {
+        for (size_t j = 0; j < x->k; j++)
+        {
+            fscanf(net_f, "%lg", &x->kernel[i][j]);
+        }
+    }
+}
+
+void conv_layer_save(conv_layer const *const x, FILE *const net_f)
+{
+    fprintf(net_f, "%zu %zu\n%lg\n", x->n, x->k, x->bias);
+
+    for (size_t i = 0; i < x->k; i++)
+    {
+        for (size_t j = 0; j < x->k; j++)
+        {
+            fprintf(net_f, "%lg ", x->kernel[i][j]);
+        }
+    }
+    fputc('\n', net_f);
+}
+
+void fc_layer_init(fc_layer *const x, size_t n, size_t m)
+{
+    x->ltype = LTYPE_FC;
+    x->n = n;
+    x->m = m;
+    x->f = ACTIVATION;
+    x->fd = ACTIVATION_D;
+    x->weight = malloc(n * sizeof(double *));
+    x->bias = malloc(n * sizeof(double));
+    for (size_t i = 0; i < n; i++)
+    {
+        x->weight[i] = malloc(m * sizeof(double));
+    }
+    x->out = 0;
+    x->weight_gradient = 0;
+    x->bias_gradient = 0;
+}
+
+void fc_layer_init_backprop(fc_layer *const x)
+{
+    x->out = malloc(x->n * sizeof(double));
+    x->weight_gradient = malloc(x->n * sizeof(double *));
+    for (size_t i = 0; i < x->n; i++)
+    {
+        x->weight_gradient[i] = malloc(x->m * sizeof(double));
+    }
+    x->bias_gradient = malloc(x->n * sizeof(double));
+}
+
+void fc_layer_destroy(fc_layer *const x)
+{
+    for (size_t i = 0; i < x->n; i++)
+    {
+        free(x->weight[i]);
+    }
+    free(x->weight);
+    free(x->bias);
+
+    if (x->out)
+    {
+        free(x->out);
+    }
+
+    if (x->weight_gradient)
+    {
+        for (size_t i = 0; i < x->n; i++)
+        {
+            free(x->weight_gradient[i]);
+        }
+        free(x->weight_gradient);
+    }
+
+    if (x->bias_gradient)
+    {
+        free(x->bias_gradient);
+    }
+}
+
 void fc_layer_pass(fc_layer const *const x, double *const in, double *const out)
 {
     mul_matrix_vector(x->n, x->m, in, x->weight, out);
@@ -263,13 +321,6 @@ void fc_layer_pass(fc_layer const *const x, double *const in, double *const out)
     printf("\n\n");
 
 #endif
-}
-
-void conv_layer_backprop(
-    conv_layer const *const x, double *const *const delta,
-    double *const *const ndelta)
-{
-    pad(x->n, x->k, delta);
 }
 
 void fc_layer_backprop(
@@ -298,18 +349,6 @@ void fc_layer_backprop(
     }
 }
 
-void conv_layer_avg_gradient(conv_layer *const x, size_t t)
-{
-    for (size_t i = 0; i < x->k; i++)
-    {
-        for (size_t j = 0; j < x->k; j++)
-        {
-            x->kernel_gradient[i][j] /= t;
-        }
-    }
-    x->bias_gradient /= t;
-}
-
 void fc_layer_avg_gradient(fc_layer const *const x, size_t t)
 {
     for (size_t i = 0; i < x->n; i++)
@@ -319,26 +358,6 @@ void fc_layer_avg_gradient(fc_layer const *const x, size_t t)
             x->weight_gradient[i][j] /= t;
         }
         x->bias_gradient[i] /= t;
-    }
-}
-
-void input_layer_read(input_layer *const x, FILE *const net_f)
-{
-    fscanf(net_f, "%zu %zu", &x->n, &x->padding);
-    input_layer_init(x, x->n, x->padding);
-}
-
-void conv_layer_read(conv_layer *const x, FILE *const net_f)
-{
-    fscanf(net_f, "%zu %zu %lg", &x->n, &x->k, &x->bias);
-    conv_layer_init(x, x->n, x->k);
-
-    for (size_t i = 0; i < x->k; i++)
-    {
-        for (size_t j = 0; j < x->k; j++)
-        {
-            fscanf(net_f, "%lg", &x->kernel[i][j]);
-        }
     }
 }
 
@@ -359,25 +378,6 @@ void fc_layer_read(fc_layer *const x, FILE *const net_f)
     {
         fscanf(net_f, "%lg", &x->bias[i]);
     }
-}
-
-void input_layer_save(input_layer const *const x, FILE *const net_f)
-{
-    fprintf(net_f, "%zu %zu\n", x->n, x->padding);
-}
-
-void conv_layer_save(conv_layer const *const x, FILE *const net_f)
-{
-    fprintf(net_f, "%zu %zu\n%lg\n", x->n, x->k, x->bias);
-
-    for (size_t i = 0; i < x->k; i++)
-    {
-        for (size_t j = 0; j < x->k; j++)
-        {
-            fprintf(net_f, "%lg ", x->kernel[i][j]);
-        }
-    }
-    fputc('\n', net_f);
 }
 
 void fc_layer_save(fc_layer const *const x, FILE *const net_f)
