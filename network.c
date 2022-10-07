@@ -11,7 +11,7 @@ network network_init(
     size_t num_conv, size_t num_fc, size_t kernel_size, size_t fc_size)
 {
     network net;
-    net.l = num_conv + num_fc + 1;
+    net.l = num_conv + num_fc + 2;
     net.layers = malloc(net.l * sizeof(layer));
 
     input_layer_init(&net.layers[0].input, 28, kernel_size / 2);
@@ -31,12 +31,16 @@ network network_init(
         }
     }
 
-    for (size_t i = num_conv + 1; i < net.l; i++)
+    flat_layer_init(
+        &net.layers[num_conv + 1].flat, net.layers[num_conv].conv.n,
+        kernel_size - 1);
+
+    for (size_t i = num_conv + 2; i < net.l; i++)
     {
         fc_layer *x = &net.layers[i].fc;
         fc_layer_init(
             x, (i == net.l - 1) ? 10 : fc_size,
-            (i == num_conv + 1) ? square(net.layers[i - 1].conv.n) : fc_size);
+            (i == num_conv + 2) ? square(net.layers[i - 1].flat.n) : fc_size);
 
         if (i != net.l - 1)
         {
@@ -79,6 +83,10 @@ void network_init_backprop(network const *const net)
         case LTYPE_FC:
             fc_layer_init_backprop(&x->fc);
             break;
+
+        case LTYPE_FLAT:
+            flat_layer_init_backprop(&x->flat);
+            break;
         }
     }
 }
@@ -99,6 +107,10 @@ void network_destroy(network *const net)
 
         case LTYPE_FC:
             fc_layer_destroy(&x->fc);
+            break;
+
+        case LTYPE_FLAT:
+            flat_layer_destroy(&x->flat);
             break;
         }
     }
@@ -138,6 +150,10 @@ network network_read(char const *const fname)
         case LTYPE_FC:
             fc_layer_read(&x->fc, net_f);
             break;
+
+        case LTYPE_FLAT:
+            flat_layer_read(&x->flat, net_f);
+            break;
         }
     }
 
@@ -175,6 +191,10 @@ void network_save(network const *const net, char const *const fname)
         case LTYPE_FC:
             fc_layer_save(&x->fc, net_f);
             break;
+
+        case LTYPE_FLAT:
+            flat_layer_save(&x->flat, net_f);
+            break;
         }
     }
 
@@ -209,19 +229,21 @@ double *network_pass_one(
         }
         case LTYPE_FC:
         {
-            if ((x - 1)->conv.ltype == LTYPE_CONV)
-            {
-                // After the first fully connected layer, only such layers
-                // come, therefore switch to vectors instead of matrices.
-                vectorize_matrix((x - 1)->conv.n, (x - 1)->conv.n,
-                                 (x - 1)->conv.k / 2, u, p);
-            }
             fc_layer_pass(&x->fc, p, q);
             swap(&p, &q);
 
             if (store_out)
             {
                 memcpy(x->fc.out, p, x->fc.n * sizeof(double));
+            }
+            break;
+        }
+        case LTYPE_FLAT:
+        {
+            flat_layer_pass(&x->flat, u, p);
+
+            if (store_out)
+            {
             }
             break;
         }
@@ -366,6 +388,9 @@ void network_backprop(
             swap(&p, &q);
             break;
         }
+        case LTYPE_FLAT:
+        {
+        }
         }
     }
 }
@@ -426,6 +451,9 @@ void network_train(
 
             case LTYPE_FC:
                 fc_layer_avg_gradient(&x->fc, t);
+                break;
+
+            case LTYPE_FLAT:
                 break;
             }
         }

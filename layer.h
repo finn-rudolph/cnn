@@ -97,11 +97,11 @@ typedef struct flat_layer flat_layer;
 struct flat_layer
 {
     uint8_t ltype;
-    size_t n, m; // Sizes of the input matrix (including padding).
+    size_t n, padding;
     double *in, *out;
 };
 
-void flat_layer_init(flat_layer *const x, size_t n, size_t m);
+void flat_layer_init(flat_layer *const x, size_t n, size_t padding);
 
 void flat_layer_init_backprop(flat_layer *const x);
 
