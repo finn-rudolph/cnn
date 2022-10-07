@@ -10,7 +10,8 @@ enum layer_type
 {
     LTYPE_INPUT,
     LTYPE_CONV,
-    LTYPE_FC
+    LTYPE_FC,
+    LTYPE_FLAT
 };
 
 typedef void (*activation_fn)(size_t n, double *const);
@@ -92,12 +93,36 @@ void fc_layer_read(fc_layer *const x, FILE *const net_f);
 
 void fc_layer_save(fc_layer const *const x, FILE *const net_f);
 
+typedef struct flat_layer flat_layer;
+struct flat_layer
+{
+    uint8_t ltype;
+    size_t n, m; // Sizes of the input matrix (including padding).
+    double *in, *out;
+};
+
+void flat_layer_init(flat_layer *const x, size_t n, size_t m);
+
+void flat_layer_init_backprop(flat_layer *const x);
+
+void flat_layer_destroy(flat_layer *const x);
+
+void flat_layer_pass(
+    flat_layer const *const x, double *const *const in, double *const out);
+
+void flat_layer_backprop(flat_layer const *const x);
+
+void flat_layer_read(flat_layer *const x, FILE *const net_f);
+
+void flat_layer_save(flat_layer const *const x, FILE *net_f);
+
 typedef union layer layer;
 union layer
 {
     input_layer input;
     conv_layer conv;
     fc_layer fc;
+    flat_layer flat;
 };
 
 #endif

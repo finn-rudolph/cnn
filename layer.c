@@ -399,3 +399,57 @@ void fc_layer_save(fc_layer const *const x, FILE *const net_f)
     }
     fputc('\n', net_f);
 }
+
+void flat_layer_init(flat_layer *const x, size_t n, size_t m)
+{
+    x->ltype = LTYPE_FLAT;
+    x->n = n;
+    x->m = m;
+    x->in = 0;
+    x->out = 0;
+}
+
+void flat_layer_init_backprop(flat_layer *const x)
+{
+    x->in = malloc(x->n * x->m * sizeof(double));
+    x->out = malloc(x->n * x->m * sizeof(double));
+}
+
+void flat_layer_destroy(flat_layer *const x)
+{
+    if (x->in)
+    {
+        free(x->in);
+    }
+    if (x->out)
+    {
+        free(x->out);
+    }
+}
+
+void flat_layer_pass(
+    flat_layer const *const x, double *const *const in, double *const out)
+{
+    for (size_t i = 0; i < x->n; i++)
+    {
+        for (size_t j = 0; j < x->m; j++)
+        {
+            out[i * x->m + j] = in[i][j];
+        }
+    }
+}
+
+void flat_layer_backprop(flat_layer const *const x)
+{
+}
+
+void flat_layer_read(flat_layer *const x, FILE *const net_f)
+{
+    fscanf(net_f, "%zu %zu", &x->n, &x->m);
+    flat_layer_init(x, x->n, x->m);
+}
+
+void flat_layer_save(flat_layer const *const x, FILE *net_f)
+{
+    fprintf(net_f, "%zu %zu\n", x->n, x->m);
+}
