@@ -282,65 +282,77 @@ double **network_pass_forward(
     return result;
 }
 
-// Returns the output of the (i - j)'th layer in vector format. If i - j < 0,
-// the input data is returned.
-double *get_prev_vector(
-    network const *const net, size_t i, size_t j, bool *must_free)
+double *vget_prev_in(network const *const net, size_t i)
 {
-    *must_free = 0;
-    j = min(j, i);
-
-    layer *x = net->layers + i - j;
+    layer *x = net->layers + i - 1;
     switch (x->conv.ltype)
     {
     case LTYPE_INPUT:
-    {
-        // This vectorization is not too expensive as it can only happen a
-        // constant number of times during one backpropagation.
-        double *prev = malloc(x->input.n * x->input.n * sizeof(double));
-        *must_free = 1;
-        vectorize_matrix(
-            x->input.n, x->input.n, x->input.padding, x->input.out, prev);
-        return prev;
-    }
     case LTYPE_CONV:
-    {
-        double *prev = malloc(x->conv.n * x->conv.n * sizeof(double));
-        *must_free = 1;
-        vectorize_matrix(x->conv.n, x->conv.n, x->conv.k / 2, x->conv.out, prev);
-        return prev;
-    }
+        return 0; // Does not occur.
+
     case LTYPE_FC:
-    {
-        return x->fc.out;
-    }
+        return x->fc.in;
+
+    case LTYPE_FLAT:
+        return x->flat.in;
     }
 
     return 0;
 }
 
-double **get_prev_matrix(network const *const net, size_t i, size_t j)
+double *vget_prev_out(network const *const net, size_t i)
 {
-    j = min(j, i);
-
-    layer *x = net->layers + i - j;
+    layer *x = net->layers + i - 1;
     switch (x->conv.ltype)
     {
     case LTYPE_INPUT:
-    {
-        return x->input.out;
-    }
     case LTYPE_CONV:
-    {
-        return x->conv.out;
-    }
+        return 0; // Does not occur.
+
     case LTYPE_FC:
-    {
-        // There is no sensible way to associate an arbitrary vector with a
-        // unique matrix, and this case will not occur as convolutional layers
-        // always precede fully connected ones.
-        return 0;
+        return x->fc.out;
+
+    case LTYPE_FLAT:
+        return x->flat.out;
     }
+
+    return 0;
+}
+
+double **mget_prev_in(network const *const net, size_t i)
+{
+    layer *x = net->layers + i - 1;
+    switch (x->conv.ltype)
+    {
+    case LTYPE_INPUT:
+        return x->input.out;
+
+    case LTYPE_CONV:
+        return x->conv.in;
+
+    case LTYPE_FC:
+    case LTYPE_FLAT:
+        return 0; // Does not occur.
+    }
+
+    return 0;
+}
+
+double **mget_prev_out(network const *const net, size_t i)
+{
+    layer *x = net->layers + i - 1;
+    switch (x->conv.ltype)
+    {
+    case LTYPE_INPUT:
+        return x->input.out;
+
+    case LTYPE_CONV:
+        return x->conv.out;
+
+    case LTYPE_FC:
+    case LTYPE_FLAT:
+        return 0; // Does not occur.
     }
 
     return 0;
@@ -357,31 +369,21 @@ void network_backprop(
         {
         case LTYPE_CONV:
         {
-            if ((x + 1)->conv.ltype == LTYPE_FC)
-            {
-                vectorize_matrix_inv(x->conv.n, x->conv.n, x->conv.k / 2, p, u);
-            }
             conv_layer_backprop(&x->conv, u, v);
             swap(&u, &v);
             break;
         }
         case LTYPE_FC:
         {
-            bool free_prev = 0, free_scn_prev = 0;
-            double *prev = get_prev_vector(net, i, 1, &free_prev);
-            double *scn_prev = get_prev_vector(net, i, 2, &free_scn_prev);
-            fc_layer_backprop(&x->fc, scn_prev, prev, p, q);
-
-            if (free_prev)
-                free(prev);
-            if (free_scn_prev)
-                free(scn_prev);
-
+            fc_layer_backprop(
+                &x->fc, vget_prev_in(net, i), vget_prev_out(net, i), p, q);
             swap(&p, &q);
             break;
         }
         case LTYPE_FLAT:
         {
+            flat_layer_backprop(&x->flat);
+            break;
         }
         }
     }
