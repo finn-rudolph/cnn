@@ -116,6 +116,7 @@ void input_layer_pass(
 
 #ifdef DEBUG_MODE
 
+    printf("Input image:\n");
     matrix_print(x->n + 2 * x->padding, x->n + 2 * x->padding, out, stdout);
 
 #endif
@@ -209,6 +210,13 @@ void conv_layer_pass(
         }
     }
 
+#ifdef DEBUG_MODE
+
+    printf("Input values:\n");
+    matrix_print(x->n, x->n, out, stdout);
+
+#endif
+
     for (size_t i = s; i < x->n + s; i++)
     {
         (*x->f)(x->n, out[i] + s);
@@ -223,6 +231,7 @@ void conv_layer_pass(
 
 #ifdef DEBUG_MODE
 
+    printf("Output values:\n");
     matrix_print(x->n + x->k - 1, x->n + x->k - 1, out, stdout);
 
 #endif
@@ -272,6 +281,13 @@ void conv_layer_backprop(
     }
 
     matrix_free(x->k, flipped_kernel);
+
+#ifdef DEBUG_MODE
+
+    printf("Delta:\n");
+    matrix_print(x->n + x->k - 1, x->n + x->k - 1, delta, stdout);
+
+#endif
 }
 
 void conv_layer_avg_gradient(conv_layer *const x, size_t t)
@@ -296,6 +312,14 @@ void conv_layer_descend(conv_layer *const x)
         }
     }
     x->bias += x->bias_gradient * LEARN_RATE;
+
+#ifdef DEBUG_MODE
+
+    printf("Kernel gradient:\n");
+    matrix_print(x->k, x->k, x->kernel_gradient, stdout);
+    printf("Bias gradient:\n %lg\n", x->bias_gradient);
+
+#endif
 }
 
 void conv_layer_read(conv_layer *const x, FILE *const stream)
@@ -393,6 +417,14 @@ void fc_layer_pass(
         memcpy(x->in, out, x->n * sizeof(double));
     }
 
+#ifdef DEBUG_MODE
+
+    printf("Input values:\n");
+    vector_print(x->n, out, stdout);
+    putchar('\n');
+
+#endif
+
     (*x->f)(x->n, out);
 
     if (store_intermed)
@@ -402,6 +434,7 @@ void fc_layer_pass(
 
 #ifdef DEBUG_MODE
 
+    printf("Output values:\n");
     vector_print(x->n, out, stdout);
     putchar('\n');
 
@@ -436,6 +469,13 @@ void fc_layer_backprop(
         (*prev_fd)(1, &z);
         ndelta[j] *= z;
     }
+
+#ifdef DEBUG_MODE
+
+    printf("Delta:\n");
+    vector_print(x->n, delta, stdout);
+
+#endif
 }
 
 void fc_layer_avg_gradient(fc_layer const *const x, size_t t)
@@ -460,6 +500,15 @@ void fc_layer_descend(fc_layer *const x)
         }
         x->bias[i] += x->bias_gradient[i] * LEARN_RATE;
     }
+
+#ifdef DEBUG_MODE
+
+    printf("Weight gradients:\n");
+    matrix_print(x->n, x->m, x->weight_gradient, stdout);
+    printf("Bias gradients:\n");
+    vector_print(x->n, x->bias_gradient, stdout);
+
+#endif
 }
 
 void fc_layer_read(fc_layer *const x, FILE *const stream)
