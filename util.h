@@ -9,21 +9,13 @@
 
 #include "def.h"
 
-#define square(x) (x * x)
-#define min(x, y) (x < y ? x : y)
+#define square(x) ((x) * (x))
+#define min(x, y) (((x) < (y)) ? (x) : (y))
+#define max(x, y) (((x) > (y)) ? (x) : (y))
 
 static inline double rand_double(double a, double b)
 {
     return a + (rand() / (RAND_MAX / (b - a)));
-}
-
-static inline void uint8_matrix_free(size_t n, uint8_t **const matrix)
-{
-    for (size_t i = 0; i < n; i++)
-    {
-        free(matrix[i]);
-    }
-    free(matrix);
 }
 
 static inline void double_matrix_free(size_t n, double **const matrix)
@@ -35,22 +27,10 @@ static inline void double_matrix_free(size_t n, double **const matrix)
     free(matrix);
 }
 
-#define matrix_free(n, matrix)    \
-    _Generic(matrix,              \
-             uint8_t * *          \
-             : uint8_matrix_free, \
-               double **          \
+#define matrix_free(n, matrix) \
+    _Generic(matrix,           \
+             double **         \
              : double_matrix_free)(n, matrix)
-
-static inline uint8_t **uint8_matrix_alloc(size_t n, size_t m)
-{
-    uint8_t **matrix = malloc(n * sizeof(uint8_t *));
-    for (size_t i = 0; i < n; i++)
-    {
-        matrix[i] = malloc(m * sizeof(uint8_t));
-    }
-    return matrix;
-}
 
 static inline double **double_matrix_alloc(size_t n, size_t m)
 {
@@ -210,7 +190,7 @@ static inline double **flip_kernel(size_t k, double *const *const kernel)
 
 static inline double relu(double x)
 {
-    return x > 0.0 ? x : 0.0;
+    return min(max(0.0, x), VALUE_MAX);
 }
 
 static inline double relu_d(double x)
@@ -232,7 +212,7 @@ static inline void vrelu(size_t n, double *const x)
 {
     for (size_t i = 0; i < n; i++)
     {
-        x[i] = x[i] > 0.0 ? x[i] : 0.0;
+        x[i] = min(max(x[i], 0.0), VALUE_MAX);
     }
 }
 
@@ -240,7 +220,7 @@ static inline void vrelu_d(size_t n, double *const x)
 {
     for (size_t i = 0; i < n; i++)
     {
-        x[i] = x[i] > 0.0 ? 1.0 : 0.0;
+        x[i] = (x[i] > 0.0 && x[i] < VALUE_MAX) ? 1.0 : 0.0;
     }
 }
 
@@ -262,14 +242,20 @@ static inline void vrelu_smooth_d(size_t n, double *x)
 
 static inline void softmax(size_t n, double *const x)
 {
+    double max_val = x[0];
+    for (size_t i = 0; i < n; i++)
+    {
+        max_val = max(max_val, x[i]);
+    }
+
     double sum = 0.0;
     for (size_t i = 0; i < n; i++)
     {
-        sum += exp(x[i]);
+        sum += exp(x[i] - max_val);
     }
     for (size_t i = 0; i < n; i++)
     {
-        x[i] = exp(x[i]) / sum;
+        x[i] = exp(x[i] - max_val) / sum;
     }
 }
 

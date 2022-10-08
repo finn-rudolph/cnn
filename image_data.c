@@ -91,7 +91,7 @@ void normalize_mini(size_t t, size_t n, size_t m, double *const *const images)
             mean += images[i][j];
         }
     }
-    mean /= (long double)t;
+    mean /= (long double)(t * n * m);
 
     long double std_deviation = 0.0;
     for (size_t i = 0; i < t; i++)
@@ -101,6 +101,7 @@ void normalize_mini(size_t t, size_t n, size_t m, double *const *const images)
             std_deviation += square(images[i][j] - mean);
         }
     }
+    std_deviation /= (double)(t * n * m);
     std_deviation = sqrt(std_deviation);
 
     for (size_t i = 0; i < t; i++)

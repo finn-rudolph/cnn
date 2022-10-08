@@ -127,6 +127,7 @@ int main(int argc, char **argv)
         network net = request_network();
         size_t a, b;
         double **images = request_images(&a, &b);
+        normalize(b - a, 28, 28, images);
 
         char result_fname[100];
         printf("Output file name: ");
@@ -146,6 +147,7 @@ int main(int argc, char **argv)
         network net = request_network();
         size_t a, b;
         double **images = request_images(&a, &b);
+        normalize(b - a, 28, 28, images);
         uint8_t *labels = request_labels(a, b);
 
         double **const results = network_pass_forward(&net, b - a, images);
@@ -163,6 +165,7 @@ int main(int argc, char **argv)
         network net = request_network();
         size_t a, b;
         double **images = request_images(&a, &b);
+        normalize(b - a, 28, 28, images);
         uint8_t *labels = request_labels(a, b);
 
         char new_fname[100];
