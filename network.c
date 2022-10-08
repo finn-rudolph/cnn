@@ -3,6 +3,7 @@
 #include <memory.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <time.h>
 
 #include "network.h"
 #include "util.h"
@@ -16,6 +17,8 @@ network network_init(
     net.layers = malloc(net.l * sizeof(layer));
 
     input_layer_init(&net.layers[0].input, 28, kernel_size / 2);
+
+    srand(time(0));
 
     for (size_t i = 1; i < num_conv + 1; i++)
     {
