@@ -119,7 +119,7 @@ void network_free(network *const net)
 // Feeds the specified image through the network. u, v, p and q must be user
 // provided buffers large endough to store intermediate results of any layer.
 double *network_pass_one(
-    network const *const net, uint8_t *const image, double **u, double **v,
+    network const *const net, double *const image, double **u, double **v,
     double *p, double *q, bool store_intermed)
 {
     input_layer_pass(&net->layers[0].input, image, u, store_intermed);
@@ -165,7 +165,7 @@ double *network_pass_one(
 }
 
 double **network_pass_forward(
-    network const *const net, size_t t, uint8_t *const *const images)
+    network const *const net, size_t t, double *const *const images)
 {
     size_t const grid_size = 28 + 2 * net->layers[0].input.padding;
     // Two grid containers for convolutional layers, two linear containers for
@@ -398,7 +398,7 @@ void network_get_loss(double *result, uint8_t label)
 
 void network_train(
     network const *const net, size_t epochs, size_t t,
-    uint8_t *const *const images, uint8_t *const labels)
+    double *const *const images, uint8_t *const labels)
 {
     size_t const grid_size = 28 + 2 * net->layers[0].input.padding;
 

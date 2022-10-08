@@ -100,12 +100,15 @@ void input_layer_free(input_layer *const x)
 }
 
 void input_layer_pass(
-    input_layer const *const x, uint8_t const *const image,
+    input_layer const *const x, double const *const image,
     double *const *const out, bool store_intermed)
 {
-    for (size_t i = 0; i < square(x->n); i++)
+    for (size_t i = 0; i < x->n; i++)
     {
-        out[(i / x->n) + x->padding][(i % x->n) + x->padding] = image[i];
+        for (size_t j = 0; j < x->n; j++)
+        {
+            out[i + x->padding][j + x->padding] = image[i * x->n + j];
+        }
     }
     pad(x->n, x->padding * 2 + 1, out);
 

@@ -34,7 +34,7 @@ void input_layer_init_backprop(input_layer *const x);
 void input_layer_free(input_layer *const x);
 
 void input_layer_pass(
-    input_layer const *const x, uint8_t const *const image,
+    input_layer const *const x, double const *const image,
     double *const *const out, bool store_intermed);
 
 void input_layer_read(input_layer *const x, FILE *const stream);

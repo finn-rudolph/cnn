@@ -1,7 +1,7 @@
 #include "data_io.h"
 #include "util.h"
 
-uint8_t **read_images(char const *const image_fname, size_t a, size_t b)
+double **read_images(char const *const image_fname, size_t a, size_t b)
 {
     assert(a <= b);
     FILE *stream = fopen(image_fname, "rb");
@@ -28,12 +28,17 @@ uint8_t **read_images(char const *const image_fname, size_t a, size_t b)
     assert(magic_num == 2051);
     assert(b <= t);
 
-    uint8_t **images = uint8_matrix_alloc(b - a, n * m);
+    double **images = double_matrix_alloc(b - a, n * m);
     fseek(stream, a * n * m, SEEK_CUR);
 
     for (size_t i = 0; i < (b - a); i++)
     {
-        fread(images[i], 1, n * m, stream);
+        for (size_t j = 0; j < n * m; j++)
+        {
+            uint8_t x;
+            fread(&x, 1, 1, stream);
+            images[i][j] = x;
+        }
     }
 
     fclose(stream);

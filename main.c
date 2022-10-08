@@ -51,7 +51,7 @@ static inline network request_network()
     return net;
 }
 
-static inline uint8_t **request_images(size_t *a, size_t *b)
+static inline double **request_images(size_t *a, size_t *b)
 {
     printf("Interval [a b) of images to read: ");
     scanf("%zu %zu", a, b);
@@ -60,7 +60,7 @@ static inline uint8_t **request_images(size_t *a, size_t *b)
     printf("Images file name: ");
     scanf("%s", image_fname);
 
-    uint8_t **const images = read_images(image_fname, *a, *b);
+    double **const images = read_images(image_fname, *a, *b);
     if (!images)
         exit(EXIT_FAILURE);
 
@@ -126,7 +126,7 @@ int main(int argc, char **argv)
     {
         network net = request_network();
         size_t a, b;
-        uint8_t **images = request_images(&a, &b);
+        double **images = request_images(&a, &b);
 
         char result_fname[100];
         printf("Output file name: ");
@@ -145,7 +145,7 @@ int main(int argc, char **argv)
     {
         network net = request_network();
         size_t a, b;
-        uint8_t **images = request_images(&a, &b);
+        double **images = request_images(&a, &b);
         uint8_t *labels = request_labels(a, b);
 
         double **const results = network_pass_forward(&net, b - a, images);
@@ -162,7 +162,7 @@ int main(int argc, char **argv)
     {
         network net = request_network();
         size_t a, b;
-        uint8_t **images = request_images(&a, &b);
+        double **images = request_images(&a, &b);
         uint8_t *labels = request_labels(a, b);
 
         char new_fname[100];
