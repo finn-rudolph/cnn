@@ -67,6 +67,7 @@ void network_init_backprop(network const *const net)
         switch (x->conv.ltype)
         {
         case LTYPE_INPUT:
+            input_layer_init_backprop(&x->input);
             break;
 
         case LTYPE_CONV:
@@ -92,6 +93,7 @@ void network_destroy(network *const net)
         switch (x->conv.ltype)
         {
         case LTYPE_INPUT:
+            input_layer_destroy(&x->input);
             break;
 
         case LTYPE_CONV:
@@ -202,7 +204,7 @@ double *network_pass_one(
     network const *const net, uint8_t *const image, double **u, double **v,
     double *p, double *q, bool store_intermed)
 {
-    input_layer_pass(&net->layers[0].input, image, u);
+    input_layer_pass(&net->layers[0].input, image, u, store_intermed);
 
     for (size_t i = 1; i < net->l; i++)
     {

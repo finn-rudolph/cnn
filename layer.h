@@ -29,9 +29,13 @@ struct input_layer
 
 void input_layer_init(input_layer *const x, size_t n, size_t padding);
 
+void input_layer_init_backprop(input_layer *const x);
+
+void input_layer_destroy(input_layer *const x);
+
 void input_layer_pass(
     input_layer const *const x, uint8_t const *const image,
-    double *const *const out);
+    double *const *const out, bool store_intermed);
 
 void input_layer_read(input_layer *const x, FILE *const net_f);
 

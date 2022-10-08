@@ -83,17 +83,43 @@ void input_layer_init(input_layer *const x, size_t n, size_t padding)
     x->ltype = LTYPE_INPUT;
     x->n = n;
     x->padding = padding;
+    x->out = 0;
+}
+
+void input_layer_init_backprop(input_layer *const x)
+{
+    x->out = malloc((x->n + 2 * x->padding) * sizeof(double *));
+    for (size_t i = 0; i < x->n + 2 * x->padding; i++)
+    {
+        x->out[i] = malloc((x->n + 2 * x->padding) * sizeof(double));
+    }
+}
+
+void input_layer_destroy(input_layer *const x)
+{
+    if (x->out)
+    {
+        destroy_matrix(x->n + 2 * x->padding, x->out);
+    }
 }
 
 void input_layer_pass(
     input_layer const *const x, uint8_t const *const image,
-    double *const *const out)
+    double *const *const out, bool store_intermed)
 {
     for (size_t i = 0; i < square(x->n); i++)
     {
         out[(i / x->n) + x->padding][(i % x->n) + x->padding] = image[i];
     }
     pad(x->n, x->padding * 2 + 1, out);
+
+    if (store_intermed)
+    {
+        for (size_t i = 0; i < x->n + 2 * x->padding; i++)
+        {
+            memcpy(x->out[i], out[i], (x->n + 2 * x->padding) * sizeof(double));
+        }
+    }
 
 #ifdef DEBUG_MODE
 
