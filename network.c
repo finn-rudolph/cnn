@@ -431,7 +431,7 @@ void network_train(
             network_backprop(net, u, v, p, q);
         }
 
-        printf("Cost: %Lg\n", cost);
+        printf("%Lg\n", cost);
         network_avg_gradient(net, t);
         network_descend(net);
     }

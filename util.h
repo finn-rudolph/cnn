@@ -198,6 +198,22 @@ static inline double relu_d(double x)
     return (x > 0.0 && x < VALUE_MAX) ? 1.0 : 0.0;
 }
 
+static inline void vrelu(size_t n, double *const x)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        x[i] = relu(x[i]);
+    }
+}
+
+static inline void vrelu_d(size_t n, double *const x)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        x[i] = relu_d(x[i]);
+    }
+}
+
 static inline double relu_smooth(double x)
 {
     return log(1.0 + exp(x));
@@ -208,27 +224,11 @@ static inline double relu_smooth_d(double x)
     return 1.0 / (1.0 + exp(-x));
 }
 
-static inline void vrelu(size_t n, double *const x)
-{
-    for (size_t i = 0; i < n; i++)
-    {
-        x[i] = min(max(x[i], 0.0), VALUE_MAX);
-    }
-}
-
-static inline void vrelu_d(size_t n, double *const x)
-{
-    for (size_t i = 0; i < n; i++)
-    {
-        x[i] = (x[i] > 0.0 && x[i] < VALUE_MAX) ? 1.0 : 0.0;
-    }
-}
-
 static inline void vrelu_smooth(size_t n, double *const x)
 {
     for (size_t i = 0; i < n; i++)
     {
-        x[i] = log(1.0 + exp(x[i]));
+        x[i] = relu_smooth(x[i]);
     }
 }
 
@@ -236,7 +236,33 @@ static inline void vrelu_smooth_d(size_t n, double *x)
 {
     for (size_t i = 0; i < n; i++)
     {
-        x[i] = 1.0 / (1.0 + exp(-x[i]));
+        x[i] = relu_smooth_d(x[i]);
+    }
+}
+
+static inline double sigmoid(double x)
+{
+    return 1.0 / (1.0 + exp(-x));
+}
+
+static inline double sigmoid_d(double x)
+{
+    return 1.0 / (2.0 + exp(x) + exp(-x));
+}
+
+static inline void vsigmoid(size_t n, double *x)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        x[i] = sigmoid(x[i]);
+    }
+}
+
+static inline void vsigmoid_d(size_t n, double *x)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        x[i] = sigmoid_d(x[i]);
     }
 }
 
