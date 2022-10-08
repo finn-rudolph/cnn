@@ -228,9 +228,9 @@ void conv_layer_pass(
 
     if (store_intermed)
     {
-        for (size_t i = s; i < x->n + s; i++)
+        for (size_t i = 0; i < x->n; i++)
         {
-            memcpy(x->in, out[i] + s, x->n * sizeof(double));
+            memcpy(x->in[i], out[i + s] + s, x->n * sizeof(double));
         }
     }
 
@@ -245,7 +245,7 @@ void conv_layer_pass(
     {
         for (size_t i = 0; i < x->n + x->k - 1; i++)
         {
-            memcpy(x->out, out[i], (x->n + x->k - 1) * sizeof(double));
+            memcpy(x->out[i], out[i], (x->n + x->k - 1) * sizeof(double));
         }
     }
 
@@ -266,14 +266,17 @@ void conv_layer_pass(
 
 void conv_layer_backprop(
     conv_layer *const x, double *const *const prev_in,
-    double *const *const prev_out, double *const *const delta,
-    double *const *const ndelta)
+    double *const *const prev_out, activation_fn prev_fd,
+    double *const *const delta, double *const *const ndelta)
 {
-    pad(x->n, x->k, delta);
+    // Convolve the current layer's deltas with the previous layer's outputs to
+    // get the gradient for the kernel.
 
+    pad(x->n, x->k, delta);
     double **delta_kernel = remove_padding(x->n, x->k / 2, delta);
     convolve(
         x->n + x->k - 1, x->n, prev_out, x->kernel_gradient, delta_kernel, 1);
+    free(delta_kernel);
 
     for (size_t i = 0; i < x->n; i++)
     {
@@ -283,6 +286,9 @@ void conv_layer_backprop(
         }
     }
 
+    // The kernel rotated by 180° convolved with the current layer's deltas are
+    // the previous layer's deltas.
+
     double **flipped_kernel = flip_kernel(x->k, x->kernel);
     convolve(x->n + x->k - 1, x->k, delta, ndelta, flipped_kernel, 0);
 
@@ -291,12 +297,11 @@ void conv_layer_backprop(
         for (size_t j = 0; j < x->n; j++)
         {
             double z = prev_in[i][j];
-            (*x->fd)(1, &z);
+            (*prev_fd)(1, &z);
             ndelta[i + x->k / 2][j + x->k / 2] *= z;
         }
     }
 
-    free(delta_kernel);
     destroy_matrix(x->k, flipped_kernel);
 }
 
@@ -467,7 +472,7 @@ void fc_layer_pass(
 
 void fc_layer_backprop(
     fc_layer const *const x, double *const prev_in, double *const prev_out,
-    double *const delta, double *const ndelta)
+    activation_fn prev_fd, double *const delta, double *const ndelta)
 {
     for (size_t i = 0; i < x->n; i++)
     {
@@ -486,7 +491,7 @@ void fc_layer_backprop(
             ndelta[j] += delta[i] * x->weight[i][j];
         }
         double z = prev_in[j];
-        (*x->fd)(1, &z);
+        (*prev_fd)(1, &z);
         ndelta[j] *= z;
     }
 }

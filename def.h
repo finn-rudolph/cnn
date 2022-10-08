@@ -1,3 +1,6 @@
+#ifndef DEF_H
+#define DEF_H 1
+
 // #define DEBUG_MODE 1
 
 #define ACTIVATION &vrelu
@@ -10,3 +13,5 @@
 #define PARAM_MAX 1.0
 
 #define LEARN_RATE 1
+
+#endif

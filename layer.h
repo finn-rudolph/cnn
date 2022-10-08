@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+#include "def.h"
+
 typedef enum layer_type layer_type;
 enum layer_type
 {
@@ -60,8 +62,8 @@ void conv_layer_pass(
 
 void conv_layer_backprop(
     conv_layer *const x, double *const *const prev_in,
-    double *const *const prev_out, double *const *const delta,
-    double *const *const ndelta);
+    double *const *const prev_out, activation_fn prev_fd,
+    double *const *const delta, double *const *const ndelta);
 
 void conv_layer_avg_gradient(conv_layer *const x, size_t t);
 
@@ -96,7 +98,7 @@ void fc_layer_pass(
 
 void fc_layer_backprop(
     fc_layer const *const x, double *const prev_in, double *const prev_out,
-    double *const delta, double *const ndelta);
+    activation_fn prev_fd, double *const delta, double *const ndelta);
 
 void fc_layer_avg_gradient(fc_layer const *const x, size_t t);
 

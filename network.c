@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <memory.h>
 #include <stdbool.h>
+#include <assert.h>
 
 #include "network.h"
 #include "util.h"
@@ -33,7 +34,7 @@ network network_init(
 
     flat_layer_init(
         &net.layers[num_conv + 1].flat, net.layers[num_conv].conv.n,
-        kernel_size - 1);
+        kernel_size / 2);
 
     for (size_t i = num_conv + 2; i < net.l; i++)
     {
@@ -42,16 +43,8 @@ network network_init(
             x, (i == net.l - 1) ? 10 : fc_size,
             (i == num_conv + 2) ? square(net.layers[i - 1].flat.n) : fc_size);
 
-        if (i != net.l - 1)
-        {
-            x->f = ACTIVATION;
-            x->fd = ACTIVATION_D;
-        }
-        else
-        {
-            x->f = OUT_ACTIVATION;
-            x->fd = 0;
-        }
+        x->f = (i != net.l - 1) ? ACTIVATION : OUT_ACTIVATION;
+        x->fd = (i != net.l - 1) ? ACTIVATION_D : OUT_ACTIVATION_D;
 
         for (size_t j = 0; j < x->n; j++)
         {
@@ -153,11 +146,13 @@ network network_read(char const *const fname)
 
         case LTYPE_FLAT:
             flat_layer_read(&x->flat, net_f);
+            assert(x->flat.n == (x - 1)->conv.n);
             break;
         }
     }
 
     net.layers[net.l - 1].fc.f = OUT_ACTIVATION;
+    net.layers[net.l - 1].fc.fd = OUT_ACTIVATION_D;
     return net;
 }
 
@@ -201,6 +196,8 @@ void network_save(network const *const net, char const *const fname)
     fclose(net_f);
 }
 
+// Feeds the specified image through the network. u, v, p and q must be user
+// provided buffers large endough to store intermediate results of any layer.
 double *network_pass_one(
     network const *const net, uint8_t *const image, double **u, double **v,
     double *p, double *q, bool store_intermed)
@@ -229,10 +226,10 @@ double *network_pass_one(
             flat_layer_pass(&x->flat, u, p);
             if (store_intermed)
             {
-                for (size_t i = 0; i < x->flat.n; i++)
+                for (size_t j = 0; j < x->flat.n; j++)
                 {
                     memcpy(
-                        x->flat.in + i * x->flat.n, (x - 1)->conv.in[i],
+                        x->flat.in + j * x->flat.n, (x - 1)->conv.in[j],
                         x->flat.n * sizeof(double));
                 }
                 memcpy(x->flat.out, p, square(x->flat.n) * sizeof(double));
@@ -403,6 +400,27 @@ double **mget_prev_out(network const *const net, size_t i)
     return 0;
 }
 
+activation_fn get_prev_fd(network const *const net, size_t i)
+{
+    layer *x = net->layers + i - 1;
+    switch (x->conv.ltype)
+    {
+    case LTYPE_INPUT:
+        return &videntity; // This avoids checking ugly edge cases.
+
+    case LTYPE_CONV:
+        return x->conv.fd;
+
+    case LTYPE_FC:
+        return x->fc.fd;
+
+    case LTYPE_FLAT:
+        return (x - 1)->conv.fd;
+    }
+
+    return 0;
+}
+
 // The delta vector of the last layer must be in the first 10 positions of p.
 void network_backprop(
     network const *const net, double **u, double **v, double *p, double *q)
@@ -415,14 +433,16 @@ void network_backprop(
         case LTYPE_CONV:
         {
             conv_layer_backprop(
-                &x->conv, mget_prev_in(net, i), mget_prev_out(net, i), u, v);
+                &x->conv, mget_prev_in(net, i), mget_prev_out(net, i),
+                get_prev_fd(net, i), u, v);
             swap(&u, &v);
             break;
         }
         case LTYPE_FC:
         {
             fc_layer_backprop(
-                &x->fc, vget_prev_in(net, i), vget_prev_out(net, i), p, q);
+                &x->fc, vget_prev_in(net, i), vget_prev_out(net, i),
+                get_prev_fd(net, i), p, q);
             swap(&p, &q);
             break;
         }
@@ -459,17 +479,17 @@ void network_descend(network const *const net)
 
 // Softmax in combination with the cross entropy cost function is used,
 // therefore computing the loss simplifies dramatically.
-void network_get_loss(double *p, uint8_t label)
+void network_get_loss(double *result, uint8_t label)
 {
     for (size_t i = 0; i < 10; i++)
     {
-        p[i] = p[i] - (double)(label == i);
+        result[i] = result[i] - (double)(label == i);
     }
 }
 
 void network_train(
-    network const *const net, size_t r, size_t t, uint8_t *const *const images,
-    uint8_t *const labels)
+    network const *const net, size_t epochs, size_t t,
+    uint8_t *const *const images, uint8_t *const labels)
 {
     size_t const grid_size = 28 + 2 * net->layers[0].input.padding;
 
@@ -484,16 +504,19 @@ void network_train(
         v[i] = malloc(grid_size * sizeof(double));
     }
 
-    for (size_t e = 0; e < r; e++)
+    network_init_backprop(net);
+
+    for (size_t e = 0; e < epochs; e++)
     {
         network_reset_gradient(net);
 
         for (size_t i = 0; i < t; i++)
         {
             double *result = network_pass_one(net, images[i], u, v, p, q, 1);
-            memcpy(p, result, 10 * sizeof(double));
-
             network_get_loss(p, labels[i]);
+
+            memcpy(p, result, 10 * sizeof(double));
+            free(result);
             network_backprop(net, u, v, p, q);
         }
 

@@ -4,6 +4,7 @@
 #include "data_io.h"
 #include "network.h"
 #include "util.h"
+#include "def.h"
 
 enum net_command
 {
@@ -29,6 +30,8 @@ enum net_command get_command(int argc, char **argv)
         command = NET_EVALUATE;
     else if (!strcmp(argv[1], "test"))
         command = NET_TEST;
+    else if (!strcmp(argv[1], "train"))
+        command = NET_TRAIN;
     else
         print_help();
 
@@ -165,11 +168,11 @@ int main(int argc, char **argv)
         char new_fname[100];
         printf("Output file of the trained network: ");
         scanf("%s", new_fname);
-        size_t r;
+        size_t epochs;
         printf("Number of training epochs: ");
-        scanf("%zu", &r);
+        scanf("%zu", &epochs);
 
-        network_train(&net, r, b - a, images, labels);
+        network_train(&net, epochs, b - a, images, labels);
         network_save(&net, new_fname);
 
         destroy_matrix(b - a, images);

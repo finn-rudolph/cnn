@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <math.h>
 
+#include "def.h"
+
 #define square(x) (x * x)
 #define min(x, y) (x < y ? x : y)
 
@@ -183,6 +185,10 @@ static inline void softmax(size_t n, double *const x)
     {
         x[i] = exp(x[i]) / sum;
     }
+}
+
+static inline void videntity(size_t n, double *const x)
+{
 }
 
 #endif
