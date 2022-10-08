@@ -121,15 +121,15 @@ void input_layer_pass(
 #endif
 }
 
-void input_layer_read(input_layer *const x, FILE *const net_f)
+void input_layer_read(input_layer *const x, FILE *const stream)
 {
-    fscanf(net_f, "%zu %zu", &x->n, &x->padding);
+    fscanf(stream, "%zu %zu", &x->n, &x->padding);
     input_layer_init(x, x->n, x->padding);
 }
 
-void input_layer_save(input_layer const *const x, FILE *const net_f)
+void input_layer_print(input_layer const *const x, FILE *const stream)
 {
-    fprintf(net_f, "%zu %zu\n", x->n, x->padding);
+    fprintf(stream, "%zu %zu\n", x->n, x->padding);
 }
 
 void conv_layer_init(conv_layer *const x, size_t n, size_t k)
@@ -293,24 +293,24 @@ void conv_layer_descend(conv_layer *const x)
     x->bias += x->bias_gradient * LEARN_RATE;
 }
 
-void conv_layer_read(conv_layer *const x, FILE *const net_f)
+void conv_layer_read(conv_layer *const x, FILE *const stream)
 {
-    fscanf(net_f, "%zu %zu %lg", &x->n, &x->k, &x->bias);
+    fscanf(stream, "%zu %zu %lg", &x->n, &x->k, &x->bias);
     conv_layer_init(x, x->n, x->k);
 
     for (size_t i = 0; i < x->k; i++)
     {
         for (size_t j = 0; j < x->k; j++)
         {
-            fscanf(net_f, "%lg", &x->kernel[i][j]);
+            fscanf(stream, "%lg", &x->kernel[i][j]);
         }
     }
 }
 
-void conv_layer_save(conv_layer const *const x, FILE *const net_f)
+void conv_layer_print(conv_layer const *const x, FILE *const stream)
 {
-    fprintf(net_f, "%zu %zu\n%lg\n", x->n, x->k, x->bias);
-    matrix_print(x->k, x->k, x->kernel, net_f);
+    fprintf(stream, "%zu %zu\n%lg\n", x->n, x->k, x->bias);
+    matrix_print(x->k, x->k, x->kernel, stream);
 }
 
 void fc_layer_init(fc_layer *const x, size_t n, size_t m)
@@ -453,31 +453,31 @@ void fc_layer_descend(fc_layer *const x)
     }
 }
 
-void fc_layer_read(fc_layer *const x, FILE *const net_f)
+void fc_layer_read(fc_layer *const x, FILE *const stream)
 {
-    fscanf(net_f, "%zu %zu", &x->n, &x->m);
+    fscanf(stream, "%zu %zu", &x->n, &x->m);
     fc_layer_init(x, x->n, x->m);
 
     for (size_t i = 0; i < x->n; i++)
     {
         for (size_t j = 0; j < x->m; j++)
         {
-            fscanf(net_f, "%lg", &x->weight[i][j]);
+            fscanf(stream, "%lg", &x->weight[i][j]);
         }
     }
 
     for (size_t i = 0; i < x->n; i++)
     {
-        fscanf(net_f, "%lg", &x->bias[i]);
+        fscanf(stream, "%lg", &x->bias[i]);
     }
 }
 
-void fc_layer_save(fc_layer const *const x, FILE *const net_f)
+void fc_layer_print(fc_layer const *const x, FILE *const stream)
 {
-    fprintf(net_f, "%zu %zu\n", x->n, x->m);
-    matrix_print(x->n, x->m, x->weight, net_f);
-    vector_print(x->n, x->bias, net_f);
-    fputc('\n', net_f);
+    fprintf(stream, "%zu %zu\n", x->n, x->m);
+    matrix_print(x->n, x->m, x->weight, stream);
+    vector_print(x->n, x->bias, stream);
+    fputc('\n', stream);
 }
 
 void flat_layer_init(flat_layer *const x, size_t n, size_t padding)
@@ -531,13 +531,13 @@ void flat_layer_backprop(
     }
 }
 
-void flat_layer_read(flat_layer *const x, FILE *const net_f)
+void flat_layer_read(flat_layer *const x, FILE *const stream)
 {
-    fscanf(net_f, "%zu %zu", &x->n, &x->padding);
+    fscanf(stream, "%zu %zu", &x->n, &x->padding);
     flat_layer_init(x, x->n, x->padding);
 }
 
-void flat_layer_save(flat_layer const *const x, FILE *net_f)
+void flat_layer_print(flat_layer const *const x, FILE *stream)
 {
-    fprintf(net_f, "%zu %zu\n", x->n, x->padding);
+    fprintf(stream, "%zu %zu\n", x->n, x->padding);
 }

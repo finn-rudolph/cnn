@@ -37,9 +37,9 @@ void input_layer_pass(
     input_layer const *const x, uint8_t const *const image,
     double *const *const out, bool store_intermed);
 
-void input_layer_read(input_layer *const x, FILE *const net_f);
+void input_layer_read(input_layer *const x, FILE *const stream);
 
-void input_layer_save(input_layer const *const x, FILE *const net_f);
+void input_layer_print(input_layer const *const x, FILE *const stream);
 
 typedef struct conv_layer conv_layer;
 struct conv_layer
@@ -73,9 +73,9 @@ void conv_layer_avg_gradient(conv_layer *const x, size_t t);
 
 void conv_layer_descend(conv_layer *const x);
 
-void conv_layer_read(conv_layer *const x, FILE *const net_f);
+void conv_layer_read(conv_layer *const x, FILE *const stream);
 
-void conv_layer_save(conv_layer const *const x, FILE *const net_f);
+void conv_layer_print(conv_layer const *const x, FILE *const stream);
 
 typedef struct fc_layer fc_layer;
 struct fc_layer
@@ -108,9 +108,9 @@ void fc_layer_avg_gradient(fc_layer const *const x, size_t t);
 
 void fc_layer_descend(fc_layer *const x);
 
-void fc_layer_read(fc_layer *const x, FILE *const net_f);
+void fc_layer_read(fc_layer *const x, FILE *const stream);
 
-void fc_layer_save(fc_layer const *const x, FILE *const net_f);
+void fc_layer_print(fc_layer const *const x, FILE *const stream);
 
 typedef struct flat_layer flat_layer;
 struct flat_layer
@@ -132,9 +132,9 @@ void flat_layer_pass(
 void flat_layer_backprop(
     flat_layer const *const x, double *const delta, double *const *const ndelta);
 
-void flat_layer_read(flat_layer *const x, FILE *const net_f);
+void flat_layer_read(flat_layer *const x, FILE *const stream);
 
-void flat_layer_save(flat_layer const *const x, FILE *net_f);
+void flat_layer_print(flat_layer const *const x, FILE *stream);
 
 typedef union layer layer;
 union layer

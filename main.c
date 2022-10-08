@@ -117,7 +117,7 @@ int main(int argc, char **argv)
         assert(fc_size >= 10);
 
         network net = network_init(num_conv, num_fc, kernel_size, fc_size);
-        network_save(&net, net_fname);
+        network_print(&net, net_fname);
         network_free(&net);
 
         break;
@@ -173,7 +173,7 @@ int main(int argc, char **argv)
         scanf("%zu", &epochs);
 
         network_train(&net, epochs, b - a, images, labels);
-        network_save(&net, new_fname);
+        network_print(&net, new_fname);
 
         matrix_free(b - a, images);
         free(labels);

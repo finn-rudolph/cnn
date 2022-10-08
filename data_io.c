@@ -4,18 +4,18 @@
 uint8_t **read_images(char const *const image_fname, size_t a, size_t b)
 {
     assert(a <= b);
-    FILE *image_f = fopen(image_fname, "rb");
-    if (!image_f)
+    FILE *stream = fopen(image_fname, "rb");
+    if (!stream)
     {
         perror("Error on opening image file");
         return 0;
     }
 
     unsigned magic_num, t, n, m;
-    fread(&magic_num, 4, 1, image_f);
-    fread(&t, 4, 1, image_f);
-    fread(&n, 4, 1, image_f);
-    fread(&m, 4, 1, image_f);
+    fread(&magic_num, 4, 1, stream);
+    fread(&t, 4, 1, stream);
+    fread(&n, 4, 1, stream);
+    fread(&m, 4, 1, stream);
 
     if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
     {
@@ -29,14 +29,14 @@ uint8_t **read_images(char const *const image_fname, size_t a, size_t b)
     assert(b <= t);
 
     uint8_t **images = uint8_matrix_alloc(b - a, n * m);
-    fseek(image_f, a * n * m, SEEK_CUR);
+    fseek(stream, a * n * m, SEEK_CUR);
 
     for (size_t i = 0; i < (b - a); i++)
     {
-        fread(images[i], 1, n * m, image_f);
+        fread(images[i], 1, n * m, stream);
     }
 
-    fclose(image_f);
+    fclose(stream);
     return images;
 }
 
@@ -44,16 +44,16 @@ uint8_t *read_labels(char const *const label_fname, size_t a, size_t b)
 {
     assert(a <= b);
 
-    FILE *label_f = fopen(label_fname, "rb");
-    if (!label_f)
+    FILE *stream = fopen(label_fname, "rb");
+    if (!stream)
     {
         perror("Error on opening label file");
         return 0;
     }
 
     unsigned magic_num, t;
-    fread(&magic_num, 4, 1, label_f);
-    fread(&t, 4, 1, label_f);
+    fread(&magic_num, 4, 1, stream);
+    fread(&t, 4, 1, stream);
 
     if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
     {
@@ -66,12 +66,12 @@ uint8_t *read_labels(char const *const label_fname, size_t a, size_t b)
 
     uint8_t *labels = malloc((b - a) * sizeof(uint8_t));
 
-    fseek(label_f, a, SEEK_CUR);
+    fseek(stream, a, SEEK_CUR);
     for (size_t i = 0; i < (b - a); i++)
     {
-        fread(labels + i, 1, 1, label_f);
+        fread(labels + i, 1, 1, stream);
     }
 
-    fclose(label_f);
+    fclose(stream);
     return labels;
 }

@@ -470,8 +470,8 @@ uint8_t *calc_max_digits(size_t t, double *const *const results)
 void network_save_results(
     char const *const result_fname, size_t t, double *const *const results)
 {
-    FILE *result_f = fopen(result_fname, "w");
-    if (!result_f)
+    FILE *stream = fopen(result_fname, "w");
+    if (!stream)
     {
         perror("Error while saving results");
         return;
@@ -481,12 +481,12 @@ void network_save_results(
 
     for (size_t i = 0; i < t; i++)
     {
-        fprintf(result_f, "%hhu\n", max_digits[i]);
-        vector_print(10, results[i], result_f);
+        fprintf(stream, "%hhu\n", max_digits[i]);
+        vector_print(10, results[i], stream);
     }
 
     free(max_digits);
-    fclose(result_f);
+    fclose(stream);
 }
 
 void network_print_accuracy(
@@ -521,39 +521,39 @@ void network_print_accuracy(
 network network_read(char const *const fname)
 {
     network net;
-    FILE *net_f = fopen(fname, "r");
-    if (!net_f)
+    FILE *stream = fopen(fname, "r");
+    if (!stream)
     {
         perror("Error while reading network from file");
         memset(&net, 0, sizeof(network));
         return net;
     }
 
-    fscanf(net_f, "%zu", &net.l);
+    fscanf(stream, "%zu", &net.l);
     net.layers = malloc(net.l * sizeof(layer));
 
     for (size_t i = 0; i < net.l; i++)
     {
         layer *x = net.layers + i;
 
-        fscanf(net_f, "%hhu", &x->conv.ltype);
+        fscanf(stream, "%hhu", &x->conv.ltype);
 
         switch (x->conv.ltype)
         {
         case LTYPE_INPUT:
-            input_layer_read(&x->input, net_f);
+            input_layer_read(&x->input, stream);
             break;
 
         case LTYPE_CONV:
-            conv_layer_read(&x->conv, net_f);
+            conv_layer_read(&x->conv, stream);
             break;
 
         case LTYPE_FC:
-            fc_layer_read(&x->fc, net_f);
+            fc_layer_read(&x->fc, stream);
             break;
 
         case LTYPE_FLAT:
-            flat_layer_read(&x->flat, net_f);
+            flat_layer_read(&x->flat, stream);
             assert(x->flat.n == (x - 1)->conv.n);
             break;
         }
@@ -564,42 +564,42 @@ network network_read(char const *const fname)
     return net;
 }
 
-void network_save(network const *const net, char const *const fname)
+void network_print(network const *const net, char const *const fname)
 {
-    FILE *net_f = fopen(fname, "w");
-    if (!net_f)
+    FILE *stream = fopen(fname, "w");
+    if (!stream)
     {
         perror("Error while saving network to disk");
         return;
     }
 
-    fprintf(net_f, "%zu\n", net->l);
+    fprintf(stream, "%zu\n", net->l);
 
     for (size_t i = 0; i < net->l; i++)
     {
         layer *x = net->layers + i;
 
-        fprintf(net_f, "%hhu\n", x->conv.ltype);
+        fprintf(stream, "%hhu\n", x->conv.ltype);
 
         switch (x->conv.ltype)
         {
         case LTYPE_INPUT:
-            input_layer_save(&x->input, net_f);
+            input_layer_print(&x->input, stream);
             break;
 
         case LTYPE_CONV:
-            conv_layer_save(&x->conv, net_f);
+            conv_layer_print(&x->conv, stream);
             break;
 
         case LTYPE_FC:
-            fc_layer_save(&x->fc, net_f);
+            fc_layer_print(&x->fc, stream);
             break;
 
         case LTYPE_FLAT:
-            flat_layer_save(&x->flat, net_f);
+            flat_layer_print(&x->flat, stream);
             break;
         }
     }
 
-    fclose(net_f);
+    fclose(stream);
 }
