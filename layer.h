@@ -17,7 +17,8 @@ enum layer_type
     LTYPE_FLAT
 };
 
-typedef void (*activation_fn)(size_t n, double *const);
+typedef double (*activation_fn)(double x);
+typedef void (*vactivation_fn)(size_t n, double *const);
 
 typedef struct input_layer input_layer;
 struct input_layer
@@ -47,7 +48,8 @@ struct conv_layer
     uint8_t ltype;
     size_t n, k;
     double bias, **kernel;
-    activation_fn f, fd;
+    vactivation_fn f;
+    activation_fn fd;
     double **in, **out; // buffers for backpropagation
     double **kernel_gradient, bias_gradient;
 };
@@ -86,7 +88,8 @@ struct fc_layer
     uint8_t ltype;
     size_t n, m;
     double **weight, *bias;
-    activation_fn f, fd;
+    vactivation_fn f;
+    activation_fn fd;
     double *in, *out;
     double **weight_gradient, *bias_gradient;
 };

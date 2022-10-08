@@ -1,10 +1,10 @@
 #ifndef DEF_H
 #define DEF_H 1
 
-#define DEBUG_MODE 1
+// #define DEBUG_MODE 1
 
 #define ACTIVATION &vrelu
-#define ACTIVATION_D &vrelu_d
+#define ACTIVATION_D &relu_d
 #define OUT_ACTIVATION &softmax
 #define OUT_ACTIVATION_D 0
 

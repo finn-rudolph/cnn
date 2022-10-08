@@ -195,7 +195,7 @@ static inline double relu(double x)
 
 static inline double relu_d(double x)
 {
-    return x > 0.0 ? 1.0 : 0.0;
+    return (x > 0.0 && x < VALUE_MAX) ? 1.0 : 0.0;
 }
 
 static inline double relu_smooth(double x)

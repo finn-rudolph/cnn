@@ -277,9 +277,7 @@ void conv_layer_backprop(
     {
         for (size_t j = 0; j < x->n; j++)
         {
-            double z = prev_in[i][j];
-            (*prev_fd)(1, &z);
-            ndelta[i + x->k / 2][j + x->k / 2] *= z;
+            ndelta[i + x->k / 2][j + x->k / 2] *= (*prev_fd)(prev_in[i][j]);
         }
     }
 
@@ -468,9 +466,7 @@ void fc_layer_backprop(
         {
             ndelta[j] += delta[i] * x->weight[i][j];
         }
-        double z = prev_in[j];
-        (*prev_fd)(1, &z);
-        ndelta[j] *= z;
+        ndelta[j] *= (*prev_fd)(prev_in[j]);
     }
 
 #ifdef DEBUG_MODE
