@@ -396,7 +396,7 @@ void network_get_loss(double *result, uint8_t label)
 
 double get_cost(double *result, uint8_t label)
 {
-    return -log1p(result[label]);
+    return -log(result[label]);
 }
 
 void network_train(
@@ -426,6 +426,7 @@ void network_train(
         for (size_t i = 0; i < t; i++)
         {
             double *result = network_pass_one(net, images[i], u, v, p, q, 1);
+
             cost += get_cost(result, labels[i]);
             network_get_loss(result, labels[i]);
 
