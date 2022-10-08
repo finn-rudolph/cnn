@@ -88,14 +88,10 @@ void input_layer_init(input_layer *const x, size_t n, size_t padding)
 
 void input_layer_init_backprop(input_layer *const x)
 {
-    x->out = malloc((x->n + 2 * x->padding) * sizeof(double *));
-    for (size_t i = 0; i < x->n + 2 * x->padding; i++)
-    {
-        x->out[i] = malloc((x->n + 2 * x->padding) * sizeof(double));
-    }
+    x->out = double_matrix_alloc(x->n + 2 * x->padding, x->n + 2 * x->padding);
 }
 
-void input_layer_destroy(input_layer *const x)
+void input_layer_free(input_layer *const x)
 {
     if (x->out)
     {
@@ -115,10 +111,7 @@ void input_layer_pass(
 
     if (store_intermed)
     {
-        for (size_t i = 0; i < x->n + 2 * x->padding; i++)
-        {
-            memcpy(x->out[i], out[i], (x->n + 2 * x->padding) * sizeof(double));
-        }
+        matrix_copy(x->n + 2 * x->padding, x->n + 2 * x->padding, out, x->out);
     }
 
 #ifdef DEBUG_MODE
@@ -154,11 +147,7 @@ void conv_layer_init(conv_layer *const x, size_t n, size_t k)
     x->k = k;
     x->f = ACTIVATION;
     x->fd = ACTIVATION_D;
-    x->kernel = malloc(k * sizeof(double *));
-    for (size_t i = 0; i < k; i++)
-    {
-        x->kernel[i] = malloc(k * sizeof(double));
-    }
+    x->kernel = double_matrix_alloc(k, k);
 
     x->in = 0;
     x->out = 0;
@@ -168,24 +157,10 @@ void conv_layer_init(conv_layer *const x, size_t n, size_t k)
 
 void conv_layer_init_backprop(conv_layer *const x)
 {
-    x->in = malloc(x->n * sizeof(double *));
-    for (size_t i = 0; i < x->n; i++)
-    {
-        x->in[i] = malloc(x->n * sizeof(double));
-    }
-
+    x->in = double_matrix_alloc(x->n, x->n);
     // Padding size is added, as padding is necessary to compute the gradient.
-    x->out = malloc((x->n + x->k - 1) * sizeof(double *));
-    for (size_t i = 0; i < x->n + x->k - 1; i++)
-    {
-        x->out[i] = malloc((x->n + x->k - 1) * sizeof(double));
-    }
-
-    x->kernel_gradient = malloc(x->k * sizeof(double *));
-    for (size_t i = 0; i < x->k; i++)
-    {
-        x->kernel_gradient[i] = malloc(x->k * sizeof(double));
-    }
+    x->out = double_matrix_alloc(x->n + x->k - 1, x->n + x->k - 1);
+    x->kernel_gradient = double_matrix_alloc(x->k, x->k);
     x->bias_gradient = 0.0;
 }
 
@@ -201,39 +176,21 @@ void conv_layer_reset_gradient(conv_layer *const x)
     x->bias_gradient = 0.0;
 }
 
-void conv_layer_destroy(conv_layer *const x)
+void conv_layer_free(conv_layer *const x)
 {
-    for (size_t i = 0; i < x->k; i++)
-    {
-        free(x->kernel[i]);
-    }
-    free(x->kernel);
+    matrix_free(x->k, x->kernel);
 
     if (x->in)
     {
-        for (size_t i = 0; i < x->n; i++)
-        {
-            free(x->in[i]);
-        }
-        free(x->in);
+        matrix_free(x->n, x->in);
     }
-
     if (x->out)
     {
-        for (size_t i = 0; i < x->n + x->k - 1; i++)
-        {
-            free(x->out[i]);
-        }
-        free(x->out);
+        matrix_free(x->n + x->k - 1, x->out);
     }
-
     if (x->kernel_gradient)
     {
-        for (size_t i = 0; i < x->k; i++)
-        {
-            free(x->kernel_gradient[i]);
-        }
-        free(x->kernel_gradient);
+        matrix_free(x->k, x->kernel_gradient);
     }
 }
 
@@ -269,10 +226,7 @@ void conv_layer_pass(
 
     if (store_intermed)
     {
-        for (size_t i = 0; i < x->n + x->k - 1; i++)
-        {
-            memcpy(x->out[i], out[i], (x->n + x->k - 1) * sizeof(double));
-        }
+        matrix_copy(x->n + x->k - 1, x->n + x->k - 1, out, x->out);
     }
 
 #ifdef DEBUG_MODE
@@ -390,12 +344,8 @@ void fc_layer_init(fc_layer *const x, size_t n, size_t m)
     x->m = m;
     x->f = ACTIVATION;
     x->fd = ACTIVATION_D;
-    x->weight = malloc(n * sizeof(double *));
+    x->weight = double_matrix_alloc(n, m);
     x->bias = malloc(n * sizeof(double));
-    for (size_t i = 0; i < n; i++)
-    {
-        x->weight[i] = malloc(m * sizeof(double));
-    }
 
     x->in = 0;
     x->out = 0;
@@ -407,12 +357,7 @@ void fc_layer_init_backprop(fc_layer *const x)
 {
     x->out = malloc(x->n * sizeof(double));
     x->in = malloc(x->n * sizeof(double));
-
-    x->weight_gradient = malloc(x->n * sizeof(double *));
-    for (size_t i = 0; i < x->n; i++)
-    {
-        x->weight_gradient[i] = malloc(x->m * sizeof(double));
-    }
+    x->weight_gradient = double_matrix_alloc(x->n, x->m);
     x->bias_gradient = malloc(x->n * sizeof(double));
 }
 
@@ -428,34 +373,23 @@ void fc_layer_reset_gradient(fc_layer *const x)
     }
 }
 
-void fc_layer_destroy(fc_layer *const x)
+void fc_layer_free(fc_layer *const x)
 {
-    for (size_t i = 0; i < x->n; i++)
-    {
-        free(x->weight[i]);
-    }
-    free(x->weight);
+    matrix_free(x->n, x->weight);
     free(x->bias);
 
     if (x->in)
     {
         free(x->in);
     }
-
     if (x->out)
     {
         free(x->out);
     }
-
     if (x->weight_gradient)
     {
-        for (size_t i = 0; i < x->n; i++)
-        {
-            free(x->weight_gradient[i]);
-        }
-        free(x->weight_gradient);
+        matrix_free(x->n, x->weight_gradient);
     }
-
     if (x->bias_gradient)
     {
         free(x->bias_gradient);
@@ -600,7 +534,7 @@ void flat_layer_init_backprop(flat_layer *const x)
     x->out = malloc(square(x->n) * sizeof(double));
 }
 
-void flat_layer_destroy(flat_layer *const x)
+void flat_layer_free(flat_layer *const x)
 {
     if (x->in)
     {

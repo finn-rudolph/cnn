@@ -118,7 +118,7 @@ int main(int argc, char **argv)
 
         network net = network_init(num_conv, num_fc, kernel_size, fc_size);
         network_save(&net, net_fname);
-        network_destroy(&net);
+        network_free(&net);
 
         break;
     }
@@ -137,7 +137,7 @@ int main(int argc, char **argv)
 
         matrix_free(b - a, images);
         matrix_free(b - a, results);
-        network_destroy(&net);
+        network_free(&net);
 
         break;
     }
@@ -154,7 +154,7 @@ int main(int argc, char **argv)
         matrix_free(b - a, images);
         free(labels);
         matrix_free(b - a, results);
-        network_destroy(&net);
+        network_free(&net);
 
         break;
     }
@@ -177,7 +177,7 @@ int main(int argc, char **argv)
 
         matrix_free(b - a, images);
         free(labels);
-        network_destroy(&net);
+        network_free(&net);
         break;
     }
     }

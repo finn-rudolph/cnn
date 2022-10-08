@@ -18,11 +18,7 @@ network network_init(
 
 void network_init_backprop(network const *const net);
 
-void network_destroy(network *const net);
-
-network network_read(char const *const fname);
-
-void network_save(network const *const net, char const *const fname);
+void network_free(network *const net);
 
 double **network_pass_forward(
     network const *const net, size_t t, uint8_t *const *const images);
@@ -36,5 +32,9 @@ void network_save_results(
 
 void network_print_accuracy(
     size_t t, double *const *const results, uint8_t *const labels);
+
+network network_read(char const *const fname);
+
+void network_save(network const *const net, char const *const fname);
 
 #endif

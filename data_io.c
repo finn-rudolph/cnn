@@ -28,12 +28,11 @@ uint8_t **read_images(char const *const image_fname, size_t a, size_t b)
     assert(magic_num == 2051);
     assert(b <= t);
 
-    uint8_t **images = malloc((b - a) * sizeof(uint8_t *));
-
+    uint8_t **images = uint8_matrix_alloc(b - a, n * m);
     fseek(image_f, a * n * m, SEEK_CUR);
+
     for (size_t i = 0; i < (b - a); i++)
     {
-        images[i] = malloc(n * m * sizeof(uint8_t));
         fread(images[i], 1, n * m, image_f);
     }
 

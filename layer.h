@@ -31,7 +31,7 @@ void input_layer_init(input_layer *const x, size_t n, size_t padding);
 
 void input_layer_init_backprop(input_layer *const x);
 
-void input_layer_destroy(input_layer *const x);
+void input_layer_free(input_layer *const x);
 
 void input_layer_pass(
     input_layer const *const x, uint8_t const *const image,
@@ -58,7 +58,7 @@ void conv_layer_init_backprop(conv_layer *const x);
 
 void conv_layer_reset_gradient(conv_layer *const x);
 
-void conv_layer_destroy(conv_layer *const x);
+void conv_layer_free(conv_layer *const x);
 
 void conv_layer_pass(
     conv_layer const *const x, double *const *const in,
@@ -94,7 +94,7 @@ void fc_layer_init_backprop(fc_layer *const x);
 
 void fc_layer_reset_gradient(fc_layer *const x);
 
-void fc_layer_destroy(fc_layer *const);
+void fc_layer_free(fc_layer *const);
 
 void fc_layer_pass(
     fc_layer const *const x, double *const in, double *const out,
@@ -124,7 +124,7 @@ void flat_layer_init(flat_layer *const x, size_t n, size_t padding);
 
 void flat_layer_init_backprop(flat_layer *const x);
 
-void flat_layer_destroy(flat_layer *const x);
+void flat_layer_free(flat_layer *const x);
 
 void flat_layer_pass(
     flat_layer const *const x, double *const *const in, double *const out);
