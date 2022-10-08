@@ -181,22 +181,18 @@ double **network_pass_forward(
         v[i] = malloc(grid_size * sizeof(double));
     }
 
-    double **result = malloc(t * sizeof(double *));
-    for (size_t i = 0; i < t; i++)
-    {
-        result[i] = malloc(10 * sizeof(double));
-    }
+    double **results = malloc(t * sizeof(double *));
 
     for (size_t i = 0; i < t; i++)
     {
-        result[i] = network_pass_one(net, images[i], u, v, p, q, 0);
+        results[i] = network_pass_one(net, images[i], u, v, p, q, 0);
     }
 
     matrix_free(grid_size, u);
     matrix_free(grid_size, v);
     free(p);
     free(q);
-    return result;
+    return results;
 }
 
 // Resets the buffers of all layers storing the accumulated gradient to 0.
@@ -491,10 +487,10 @@ void network_save_results(
 void network_print_accuracy(
     size_t t, double *const *const results, uint8_t *const labels)
 {
-    unsigned digit_correct[10], digit_occ[10];
-    memset(digit_correct, 0, 10 * sizeof(unsigned));
-    memset(digit_occ, 0, 10 * sizeof(unsigned));
-    unsigned total_correct = 0;
+    size_t digit_correct[10], digit_occ[10];
+    memset(digit_correct, 0, 10 * sizeof(size_t));
+    memset(digit_occ, 0, 10 * sizeof(size_t));
+    size_t total_correct = 0;
 
     uint8_t *max_digits = calc_max_digits(t, results);
 
