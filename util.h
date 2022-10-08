@@ -8,14 +8,13 @@
 #include "def.h"
 
 #define square(x) (x * x)
-#define min(x, y) (x < y ? x : y)
 
 static inline double rand_double(double a, double b)
 {
     return a + (rand() / (RAND_MAX / (b - a)));
 }
 
-static inline void destroy_matrix_uint8(size_t n, uint8_t **const matrix)
+static inline void matrix_free_uint8(size_t n, uint8_t **const matrix)
 {
     for (size_t i = 0; i < n; i++)
     {
@@ -24,7 +23,7 @@ static inline void destroy_matrix_uint8(size_t n, uint8_t **const matrix)
     free(matrix);
 }
 
-static inline void destroy_matrix_double(size_t n, double **const matrix)
+static inline void matrix_free_double(size_t n, double **const matrix)
 {
     for (size_t i = 0; i < n; i++)
     {
@@ -33,12 +32,32 @@ static inline void destroy_matrix_double(size_t n, double **const matrix)
     free(matrix);
 }
 
-#define destroy_matrix(n, matrix)    \
-    _Generic(matrix,                 \
-             uint8_t * *             \
-             : destroy_matrix_uint8, \
-               double **             \
-             : destroy_matrix_double)(n, matrix)
+#define matrix_free(n, matrix)    \
+    _Generic(matrix,              \
+             uint8_t * *          \
+             : matrix_free_uint8, \
+               double **          \
+             : matrix_free_double)(n, matrix)
+
+static inline uint8_t **matrix_alloc_uint8(size_t n, size_t m)
+{
+    uint8_t **matrix = malloc(n * sizeof(uint8_t *));
+    for (size_t i = 0; i < n; i++)
+    {
+        matrix[i] = malloc(m * sizeof(uint8_t));
+    }
+    return matrix;
+}
+
+static inline double **matrix_alloc_double(size_t n, size_t m)
+{
+    double **matrix = malloc(n * sizeof(double *));
+    for (size_t i = 0; i < n; i++)
+    {
+        matrix[i] = malloc(m * sizeof(double));
+    }
+    return matrix;
+}
 
 static inline void swap_dp(double **x, double **y)
 {

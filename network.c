@@ -274,8 +274,8 @@ double **network_pass_forward(
         result[i] = network_pass_one(net, images[i], u, v, p, q, 0);
     }
 
-    destroy_matrix(grid_size, u);
-    destroy_matrix(grid_size, v);
+    matrix_free(grid_size, u);
+    matrix_free(grid_size, v);
     free(p);
     free(q);
     return result;
@@ -526,8 +526,8 @@ void network_train(
         network_descend(net);
     }
 
-    destroy_matrix(grid_size, u);
-    destroy_matrix(grid_size, v);
+    matrix_free(grid_size, u);
+    matrix_free(grid_size, v);
     free(p);
     free(q);
 }

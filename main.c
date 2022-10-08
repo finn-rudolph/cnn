@@ -135,8 +135,8 @@ int main(int argc, char **argv)
         double **const results = network_pass_forward(&net, b - a, images);
         network_save_results(result_fname, b - a, results);
 
-        destroy_matrix(b - a, images);
-        destroy_matrix(b - a, results);
+        matrix_free(b - a, images);
+        matrix_free(b - a, results);
         network_destroy(&net);
 
         break;
@@ -151,9 +151,9 @@ int main(int argc, char **argv)
         double **const results = network_pass_forward(&net, b - a, images);
         network_print_accuracy(b - a, results, labels);
 
-        destroy_matrix(b - a, images);
+        matrix_free(b - a, images);
         free(labels);
-        destroy_matrix(b - a, results);
+        matrix_free(b - a, results);
         network_destroy(&net);
 
         break;
@@ -175,7 +175,7 @@ int main(int argc, char **argv)
         network_train(&net, epochs, b - a, images, labels);
         network_save(&net, new_fname);
 
-        destroy_matrix(b - a, images);
+        matrix_free(b - a, images);
         free(labels);
         network_destroy(&net);
         break;

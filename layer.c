@@ -99,7 +99,7 @@ void input_layer_destroy(input_layer *const x)
 {
     if (x->out)
     {
-        destroy_matrix(x->n + 2 * x->padding, x->out);
+        matrix_free(x->n + 2 * x->padding, x->out);
     }
 }
 
@@ -328,7 +328,7 @@ void conv_layer_backprop(
         }
     }
 
-    destroy_matrix(x->k, flipped_kernel);
+    matrix_free(x->k, flipped_kernel);
 }
 
 void conv_layer_avg_gradient(conv_layer *const x, size_t t)
