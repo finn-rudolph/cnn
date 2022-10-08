@@ -10,6 +10,7 @@
 #include "def.h"
 
 #define square(x) (x * x)
+#define min(x, y) (x < y ? x : y)
 
 static inline double rand_double(double a, double b)
 {

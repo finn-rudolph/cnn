@@ -1,4 +1,4 @@
-#include "data_io.h"
+#include "image_data.h"
 #include "util.h"
 
 double **read_images(char const *const image_fname, size_t a, size_t b)
@@ -79,4 +79,44 @@ uint8_t *read_labels(char const *const label_fname, size_t a, size_t b)
 
     fclose(stream);
     return labels;
+}
+
+void normalize_mini(size_t t, size_t n, size_t m, double *const *const images)
+{
+    long double mean = 0.0;
+    for (size_t i = 0; i < t; i++)
+    {
+        for (size_t j = 0; j < n * m; j++)
+        {
+            mean += images[i][j];
+        }
+    }
+    mean /= (long double)t;
+
+    long double std_deviation = 0.0;
+    for (size_t i = 0; i < t; i++)
+    {
+        for (size_t j = 0; j < n * m; j++)
+        {
+            std_deviation += square(images[i][j] - mean);
+        }
+    }
+    std_deviation = sqrt(std_deviation);
+
+    for (size_t i = 0; i < t; i++)
+    {
+        for (size_t j = 0; j < n * m; j++)
+        {
+            images[i][j] -= mean;
+            images[i][j] /= std_deviation;
+        }
+    }
+}
+
+void normalize(size_t t, size_t n, size_t m, double *const *const images)
+{
+    for (size_t i = 0; i < t; i += NORMALIZATION_BATCH_SIZE)
+    {
+        normalize_mini(min(NORMALIZATION_BATCH_SIZE, t - i), n, m, images + i);
+    }
 }

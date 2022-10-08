@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "data_io.h"
+#include "image_data.h"
 #include "network.h"
 #include "util.h"
 #include "def.h"
