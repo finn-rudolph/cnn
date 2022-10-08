@@ -246,18 +246,15 @@ double *vget_prev_in(network const *const net, size_t i)
     layer *x = net->layers + i - 1;
     switch (x->conv.ltype)
     {
-    case LTYPE_INPUT:
-    case LTYPE_CONV:
-        return 0; // Does not occur.
-
     case LTYPE_FC:
         return x->fc.in;
 
     case LTYPE_FLAT:
         return x->flat.in;
-    }
 
-    return 0;
+    default:
+        return 0;
+    }
 }
 
 double *vget_prev_out(network const *const net, size_t i)
@@ -265,18 +262,15 @@ double *vget_prev_out(network const *const net, size_t i)
     layer *x = net->layers + i - 1;
     switch (x->conv.ltype)
     {
-    case LTYPE_INPUT:
-    case LTYPE_CONV:
-        return 0; // Does not occur.
-
     case LTYPE_FC:
         return x->fc.out;
 
     case LTYPE_FLAT:
         return x->flat.out;
-    }
 
-    return 0;
+    default:
+        return 0;
+    }
 }
 
 double **mget_prev_in(network const *const net, size_t i)
@@ -290,12 +284,9 @@ double **mget_prev_in(network const *const net, size_t i)
     case LTYPE_CONV:
         return x->conv.in;
 
-    case LTYPE_FC:
-    case LTYPE_FLAT:
-        return 0; // Does not occur.
+    default:
+        return 0;
     }
-
-    return 0;
 }
 
 double **mget_prev_out(network const *const net, size_t i)
@@ -309,12 +300,9 @@ double **mget_prev_out(network const *const net, size_t i)
     case LTYPE_CONV:
         return x->conv.out;
 
-    case LTYPE_FC:
-    case LTYPE_FLAT:
-        return 0; // Does not occur.
+    default:
+        return 0;
     }
-
-    return 0;
 }
 
 activation_fn get_prev_fd(network const *const net, size_t i)
@@ -322,9 +310,6 @@ activation_fn get_prev_fd(network const *const net, size_t i)
     layer *x = net->layers + i - 1;
     switch (x->conv.ltype)
     {
-    case LTYPE_INPUT:
-        return &videntity; // This avoids checking ugly edge cases.
-
     case LTYPE_CONV:
         return x->conv.fd;
 
@@ -333,9 +318,10 @@ activation_fn get_prev_fd(network const *const net, size_t i)
 
     case LTYPE_FLAT:
         return (x - 1)->conv.fd;
-    }
 
-    return 0;
+    default:
+        return 0;
+    }
 }
 
 // The delta vector of the last layer must be in the first 10 positions of p.
@@ -349,17 +335,20 @@ void network_backprop(
         {
         case LTYPE_CONV:
         {
-            conv_layer_backprop(
-                &x->conv, mget_prev_in(net, i), mget_prev_out(net, i),
-                get_prev_fd(net, i), u, v);
-            swap(&u, &v);
+            conv_layer_update_gradient(&x->conv, mget_prev_out(net, i), u);
+            if (i > 1) // Propagating to the input layer is unnecessary.
+            {
+                conv_layer_backprop(
+                    &x->conv, mget_prev_in(net, i), get_prev_fd(net, i), u, v);
+                swap(&u, &v);
+            }
             break;
         }
         case LTYPE_FC:
         {
+            fc_layer_update_gradient(&x->fc, vget_prev_out(net, i), p);
             fc_layer_backprop(
-                &x->fc, vget_prev_in(net, i), vget_prev_out(net, i),
-                get_prev_fd(net, i), p, q);
+                &x->fc, vget_prev_in(net, i), get_prev_fd(net, i), p, q);
             swap(&p, &q);
             break;
         }
@@ -573,7 +562,7 @@ void network_print(network const *const net, char const *const fname)
         return;
     }
 
-    fprintf(stream, "%zu\n", net->l);
+    fprintf(stream, "%zu\n\n", net->l);
 
     for (size_t i = 0; i < net->l; i++)
     {

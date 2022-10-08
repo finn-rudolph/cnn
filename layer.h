@@ -64,9 +64,12 @@ void conv_layer_pass(
     conv_layer const *const x, double *const *const in,
     double *const *const out, bool store_intermed);
 
+void conv_layer_update_gradient(
+    conv_layer *const x, double *const *const prev_out,
+    double *const *const delta);
+
 void conv_layer_backprop(
-    conv_layer *const x, double *const *const prev_in,
-    double *const *const prev_out, activation_fn prev_fd,
+    conv_layer *const x, double *const *const prev_in, activation_fn prev_fd,
     double *const *const delta, double *const *const ndelta);
 
 void conv_layer_avg_gradient(conv_layer *const x, size_t t);
@@ -100,9 +103,12 @@ void fc_layer_pass(
     fc_layer const *const x, double *const in, double *const out,
     bool store_intermed);
 
+void fc_layer_update_gradient(
+    fc_layer *const x, double *const prev_out, double *const delta);
+
 void fc_layer_backprop(
-    fc_layer const *const x, double *const prev_in, double *const prev_out,
-    activation_fn prev_fd, double *const delta, double *const ndelta);
+    fc_layer const *const x, double *const prev_in, activation_fn prev_fd,
+    double *const delta, double *const ndelta);
 
 void fc_layer_avg_gradient(fc_layer const *const x, size_t t);
 

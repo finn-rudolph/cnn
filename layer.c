@@ -129,7 +129,7 @@ void input_layer_read(input_layer *const x, FILE *const stream)
 
 void input_layer_print(input_layer const *const x, FILE *const stream)
 {
-    fprintf(stream, "%zu %zu\n", x->n, x->padding);
+    fprintf(stream, "%zu %zu\n\n", x->n, x->padding);
 }
 
 void conv_layer_init(conv_layer *const x, size_t n, size_t k)
@@ -228,15 +228,13 @@ void conv_layer_pass(
 #endif
 }
 
-void conv_layer_backprop(
-    conv_layer *const x, double *const *const prev_in,
-    double *const *const prev_out, activation_fn prev_fd,
-    double *const *const delta, double *const *const ndelta)
+void conv_layer_update_gradient(
+    conv_layer *const x, double *const *const prev_out,
+    double *const *const delta)
 {
     // Convolve the current layer's deltas with the previous layer's outputs to
     // get the gradient for the kernel.
 
-    pad(x->n, x->k, delta);
     double **delta_kernel = remove_padding(x->n, x->k / 2, delta);
     convolve(
         x->n + x->k - 1, x->n, prev_out, x->kernel_gradient, delta_kernel, 1);
@@ -249,6 +247,13 @@ void conv_layer_backprop(
             x->bias_gradient += delta[i + x->k / 2][j + x->k / 2];
         }
     }
+}
+
+void conv_layer_backprop(
+    conv_layer *const x, double *const *const prev_in, activation_fn prev_fd,
+    double *const *const delta, double *const *const ndelta)
+{
+    pad(x->n, x->k, delta);
 
     // The kernel rotated by 180° convolved with the current layer's deltas are
     // the previous layer's deltas.
@@ -403,9 +408,8 @@ void fc_layer_pass(
 #endif
 }
 
-void fc_layer_backprop(
-    fc_layer const *const x, double *const prev_in, double *const prev_out,
-    activation_fn prev_fd, double *const delta, double *const ndelta)
+void fc_layer_update_gradient(
+    fc_layer *const x, double *const prev_out, double *const delta)
 {
     for (size_t i = 0; i < x->n; i++)
     {
@@ -415,7 +419,12 @@ void fc_layer_backprop(
         }
         x->bias_gradient[i] += delta[i];
     }
+}
 
+void fc_layer_backprop(
+    fc_layer const *const x, double *const prev_in, activation_fn prev_fd,
+    double *const delta, double *const ndelta)
+{
     for (size_t j = 0; j < x->m; j++)
     {
         ndelta[j] = 0.0;

@@ -272,8 +272,4 @@ static inline void softmax(size_t n, double *const x)
     }
 }
 
-static inline void videntity(size_t n, double *const x)
-{
-}
-
 #endif
