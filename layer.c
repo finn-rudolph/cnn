@@ -215,7 +215,7 @@ void conv_layer_pass(
     conv_layer const *const x, double *const *const in,
     double *const *const out, bool store_intermed)
 {
-    convolve(x->n + x->k - 1, x->k, in, out, x->kernel, 0);
+    convolve_pad(x->n + x->k - 1, x->k, in, out, x->kernel, 0);
 
     size_t const s = x->k / 2;
     for (size_t i = s; i < x->n + s; i++)
@@ -290,7 +290,7 @@ void conv_layer_backprop(
     // the previous layer's deltas.
 
     double **flipped_kernel = flip_kernel(x->k, x->kernel);
-    convolve(x->n + x->k - 1, x->k, delta, ndelta, flipped_kernel, 0);
+    convolve_pad(x->n + x->k - 1, x->k, delta, ndelta, flipped_kernel, 0);
 
     for (size_t i = 0; i < x->n; i++)
     {
