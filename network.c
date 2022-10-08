@@ -207,16 +207,15 @@ void network_reset_gradient(network const *const net)
         layer *x = net->layers + i;
         switch (x->conv.ltype)
         {
-        case LTYPE_INPUT:
-        case LTYPE_FLAT:
-            break;
-
         case LTYPE_CONV:
             conv_layer_reset_gradient(&x->conv);
             break;
 
         case LTYPE_FC:
             fc_layer_reset_gradient(&x->fc);
+            break;
+
+        default:
             break;
         }
     }
@@ -229,16 +228,15 @@ void network_avg_gradient(network const *const net, size_t t)
         layer *x = net->layers + i;
         switch (x->conv.ltype)
         {
-        case LTYPE_INPUT:
-        case LTYPE_FLAT:
-            break;
-
         case LTYPE_CONV:
             conv_layer_avg_gradient(&x->conv, t);
             break;
 
         case LTYPE_FC:
             fc_layer_avg_gradient(&x->fc, t);
+            break;
+
+        default:
             break;
         }
     }
@@ -386,7 +384,7 @@ void network_descend(network const *const net)
     }
 }
 
-// Softmax in combination with the cross entropy cost function is used,
+// Softmax in combination with the log-likelihood cost function is used,
 // therefore computing the loss simplifies dramatically.
 void network_get_loss(double *result, uint8_t label)
 {
@@ -394,6 +392,11 @@ void network_get_loss(double *result, uint8_t label)
     {
         result[i] = result[i] - (double)(label == i);
     }
+}
+
+double get_cost(double *result, uint8_t label)
+{
+    return -log1p(result[label]);
 }
 
 void network_train(
@@ -418,17 +421,20 @@ void network_train(
     for (size_t e = 0; e < epochs; e++)
     {
         network_reset_gradient(net);
+        long double cost = 0.0;
 
         for (size_t i = 0; i < t; i++)
         {
             double *result = network_pass_one(net, images[i], u, v, p, q, 1);
-            network_get_loss(p, labels[i]);
+            cost += get_cost(result, labels[i]);
+            network_get_loss(result, labels[i]);
 
             memcpy(p, result, 10 * sizeof(double));
             free(result);
             network_backprop(net, u, v, p, q);
         }
 
+        printf("Cost: %Lg\n", cost);
         network_avg_gradient(net, t);
         network_descend(net);
     }
