@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <math.h>
 #include <memory.h>
+#include <stdio.h>
 
 #include "def.h"
 
@@ -72,7 +73,57 @@ static inline void double_matrix_copy(
 #define matrix_copy(n, m, in, out) \
     _Generic(in,                   \
              double *const *       \
-             : double_matrix_copy)(n, m, in, out)
+             : double_matrix_copy, \
+               double **           \
+             : double_matrix_print)(n, m, in, out)
+
+static inline void double_matrix_print(
+    size_t n, size_t m, double *const *const matrix, FILE *stream)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        for (size_t j = 0; j < m; j++)
+        {
+            fprintf(stream, "%lg ", matrix[i][j]);
+        }
+        fputc('\n', stream);
+    }
+    fputc('\n', stream);
+}
+
+#define matrix_print(n, m, matrix, stream) \
+    _Generic(matrix,                       \
+             double *const *               \
+             : double_matrix_print,        \
+               double **                   \
+             : double_matrix_print)(n, m, matrix, stream)
+
+static inline void double_vector_print(
+    size_t n, double *const vector, FILE *stream)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        fprintf(stream, "%lg ", vector[i]);
+    }
+    fputc('\n', stream);
+}
+
+static inline void uint8_vector_print(
+    size_t n, uint8_t *const vector, FILE *stream)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        fprintf(stream, "%hhu ", vector[i]);
+    }
+    fputc('\n', stream);
+}
+
+#define vector_print(n, vector, stream) \
+    _Generic(vector,                    \
+             double *                   \
+             : double_vector_print,     \
+               uint8_t *                \
+             : uint8_vector_print)(n, vector, stream)
 
 static inline void swap_dp(double **x, double **y)
 {

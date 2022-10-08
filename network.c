@@ -482,11 +482,7 @@ void network_save_results(
     for (size_t i = 0; i < t; i++)
     {
         fprintf(result_f, "%hhu\n", max_digits[i]);
-        for (size_t j = 0; j < 10; j++)
-        {
-            fprintf(result_f, "%lg ", results[i][j]);
-        }
-        fputc('\n', result_f);
+        vector_print(10, results[i], result_f);
     }
 
     free(max_digits);

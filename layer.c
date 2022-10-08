@@ -116,15 +116,7 @@ void input_layer_pass(
 
 #ifdef DEBUG_MODE
 
-    for (size_t i = 0; i < x->n + 2 * x->padding; i++)
-    {
-        for (size_t j = 0; j < x->n + 2 * x->padding; j++)
-        {
-            printf("%lg ", out[i][j]);
-        }
-        putchar('\n');
-    }
-    putchar('\n');
+    matrix_print(x->n + 2 * x->padding, x->n + 2 * x->padding, out, stdout);
 
 #endif
 }
@@ -231,15 +223,7 @@ void conv_layer_pass(
 
 #ifdef DEBUG_MODE
 
-    for (size_t i = 0; i < x->n + x->k - 1; i++)
-    {
-        for (size_t j = 0; j < x->n + x->k - 1; j++)
-        {
-            printf("%lg ", out[i][j]);
-        }
-        putchar('\n');
-    }
-    putchar('\n');
+    matrix_print(x->n + x->k - 1, x->n + x->k - 1, out, stdout);
 
 #endif
 }
@@ -326,15 +310,7 @@ void conv_layer_read(conv_layer *const x, FILE *const net_f)
 void conv_layer_save(conv_layer const *const x, FILE *const net_f)
 {
     fprintf(net_f, "%zu %zu\n%lg\n", x->n, x->k, x->bias);
-
-    for (size_t i = 0; i < x->k; i++)
-    {
-        for (size_t j = 0; j < x->k; j++)
-        {
-            fprintf(net_f, "%lg ", x->kernel[i][j]);
-        }
-    }
-    fputc('\n', net_f);
+    matrix_print(x->k, x->k, x->kernel, net_f);
 }
 
 void fc_layer_init(fc_layer *const x, size_t n, size_t m)
@@ -421,11 +397,8 @@ void fc_layer_pass(
 
 #ifdef DEBUG_MODE
 
-    for (size_t i = 0; i < x->n; i++)
-    {
-        printf("%lg ", out[i]);
-    }
-    printf("\n\n");
+    vector_print(x->n, out, stdout);
+    putchar('\n');
 
 #endif
 }
@@ -502,20 +475,8 @@ void fc_layer_read(fc_layer *const x, FILE *const net_f)
 void fc_layer_save(fc_layer const *const x, FILE *const net_f)
 {
     fprintf(net_f, "%zu %zu\n", x->n, x->m);
-
-    for (size_t i = 0; i < x->n; i++)
-    {
-        for (size_t j = 0; j < x->m; j++)
-        {
-            fprintf(net_f, "%lg ", x->weight[i][j]);
-        }
-    }
-    fputc('\n', net_f);
-
-    for (size_t i = 0; i < x->n; i++)
-    {
-        fprintf(net_f, "%lg ", x->bias[i]);
-    }
+    matrix_print(x->n, x->m, x->weight, net_f);
+    vector_print(x->n, x->bias, net_f);
     fputc('\n', net_f);
 }
 
