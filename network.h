@@ -24,8 +24,8 @@ double **network_pass_forward(
     network const *const net, size_t t, double *const *const images);
 
 void network_train(
-    network const *const net, size_t epochs, size_t t,
-    double *const *const images, uint8_t *const labels);
+    network const *const net, size_t epochs, size_t t, double **const images,
+    uint8_t *const labels);
 
 void network_save_results(
     char const *const result_fname, size_t t, double *const *const result);

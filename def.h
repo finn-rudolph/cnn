@@ -17,6 +17,7 @@
 
 #define LEARN_RATE -0.1
 
+#define BATCH_SIZE 1000
 #define NORMALIZATION_BATCH_SIZE 100
 
 #endif

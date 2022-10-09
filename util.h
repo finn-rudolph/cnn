@@ -6,6 +6,7 @@
 #include <math.h>
 #include <memory.h>
 #include <stdio.h>
+#include <time.h>
 
 #include "def.h"
 
@@ -16,6 +17,41 @@
 static inline double rand_double(double a, double b)
 {
     return a + (rand() / (RAND_MAX / (b - a)));
+}
+
+// Swapping functions.
+
+static inline void swap_dp(double **x, double **y)
+{
+    double *z = *x;
+    *x = *y;
+    *y = z;
+}
+
+static inline void swap_dpp(double ***x, double ***y)
+{
+    double **z = *x;
+    *x = *y;
+    *y = z;
+}
+
+#define swap(x, y)        \
+    _Generic(x,           \
+             double **    \
+             : swap_dp,   \
+               double *** \
+             : swap_dpp)(x, y)
+
+// Matrix utility functions.
+
+static inline double **double_matrix_alloc(size_t n, size_t m)
+{
+    double **matrix = malloc(n * sizeof(double *));
+    for (size_t i = 0; i < n; i++)
+    {
+        matrix[i] = malloc(m * sizeof(double));
+    }
+    return matrix;
 }
 
 static inline void double_matrix_free(size_t n, double **const matrix)
@@ -31,16 +67,6 @@ static inline void double_matrix_free(size_t n, double **const matrix)
     _Generic(matrix,           \
              double **         \
              : double_matrix_free)(n, matrix)
-
-static inline double **double_matrix_alloc(size_t n, size_t m)
-{
-    double **matrix = malloc(n * sizeof(double *));
-    for (size_t i = 0; i < n; i++)
-    {
-        matrix[i] = malloc(m * sizeof(double));
-    }
-    return matrix;
-}
 
 static inline void double_matrix_copy(
     size_t n, size_t m, double *const *const in, double *const *const out)
@@ -79,6 +105,8 @@ static inline void double_matrix_print(
                double **                   \
              : double_matrix_print)(n, m, matrix, stream)
 
+// Vector utility functions.
+
 static inline void double_vector_print(
     size_t n, double *const vector, FILE *stream)
 {
@@ -106,27 +134,20 @@ static inline void uint8_vector_print(
                uint8_t *                \
              : uint8_vector_print)(n, vector, stream)
 
-static inline void swap_dp(double **x, double **y)
+static inline void vector_random_shuffle(size_t n, double **vector)
 {
-    double *z = *x;
-    *x = *y;
-    *y = z;
+    srand(time(0));
+    for (size_t i = 0; i < n; i++)
+    {
+        size_t j = rand() % (i + 1);
+        if (i != j)
+        {
+            swap(vector + i, vector + j);
+        }
+    }
 }
 
-static inline void swap_dpp(double ***x, double ***y)
-{
-    double **z = *x;
-    *x = *y;
-    *y = z;
-}
-
-// x and y must be pointers to the base type.
-#define swap(x, y)        \
-    _Generic(x,           \
-             double **    \
-             : swap_dp,   \
-               double *** \
-             : swap_dpp)(x, y)
+// Endianess inversion functions.
 
 static inline void rev_uint16(uint16_t *x)
 {
@@ -151,7 +172,8 @@ static inline void rev_uint32(uint32_t *x)
                uint32_t *  \
              : rev_uint32)(x)
 
-// in must be a row vector of length m.
+// Multiplies a vector of length m with a matrix of size n x m and stores the
+// resulting vector of length n in out.
 static inline void mul_matrix_vector(
     size_t n, size_t m, double const *const in, double *const *const matrix,
     double *const out)
@@ -185,8 +207,8 @@ static inline double **flip_kernel(size_t k, double *const *const kernel)
     return flipped;
 }
 
-// Suffix _d means derivative. Prefix v means the function uses a vector, not
-// only a scalar.
+// Activation functions. Suffix _d means derivative. Prefix v means the function
+// uses a vector, not only a scalar.
 
 static inline double relu(double x)
 {
@@ -268,6 +290,7 @@ static inline void vsigmoid_d(size_t n, double *x)
 
 static inline void softmax(size_t n, double *const x)
 {
+    // Subtract the maximum to avoid overflow.
     double max_val = x[0];
     for (size_t i = 0; i < n; i++)
     {

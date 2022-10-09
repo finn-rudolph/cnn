@@ -396,8 +396,8 @@ double get_cost(double *result, uint8_t label)
 }
 
 void network_train(
-    network const *const net, size_t epochs, size_t t,
-    double *const *const images, uint8_t *const labels)
+    network const *const net, size_t epochs, size_t t, double **const images,
+    uint8_t *const labels)
 {
     size_t const grid_size = 28 + 2 * net->layers[0].input.padding;
 
@@ -416,7 +416,7 @@ void network_train(
 
     for (size_t e = 0; e < epochs; e++)
     {
-        network_reset_gradient(net);
+        vector_random_shuffle(t, images);
         long double cost = 0.0;
 
         for (size_t i = 0; i < t; i++)
@@ -429,11 +429,24 @@ void network_train(
             memcpy(p, result, 10 * sizeof(double));
             free(result);
             network_backprop(net, u, v, p, q);
+
+            if (!((i + 1) % BATCH_SIZE))
+            {
+                network_avg_gradient(net, t);
+                network_descend(net);
+                network_reset_gradient(net);
+
+                printf("%Lg\n", cost);
+                cost = 0.0;
+            }
         }
 
-        printf("%Lg\n", cost);
-        network_avg_gradient(net, t);
-        network_descend(net);
+        if (t % BATCH_SIZE)
+        {
+            network_avg_gradient(net, t);
+            network_descend(net);
+            printf("%Lg\n", cost);
+        }
     }
 
     matrix_free(grid_size, u);
