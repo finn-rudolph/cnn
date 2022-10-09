@@ -21,26 +21,35 @@ static inline double rand_double(double a, double b)
 
 // Swapping functions.
 
-static inline void swap_dp(double **x, double **y)
+static inline void doublep_swap(double **x, double **y)
 {
     double *z = *x;
     *x = *y;
     *y = z;
 }
 
-static inline void swap_dpp(double ***x, double ***y)
+static inline void doublepp_swap(double ***x, double ***y)
 {
     double **z = *x;
     *x = *y;
     *y = z;
 }
 
-#define swap(x, y)        \
-    _Generic(x,           \
-             double **    \
-             : swap_dp,   \
-               double *** \
-             : swap_dpp)(x, y)
+static inline void uint8_swap(uint8_t *x, uint8_t *y)
+{
+    uint8_t z = *x;
+    *x = *y;
+    *y = z;
+}
+
+#define swap(x, y)            \
+    _Generic(x,               \
+             double **        \
+             : doublep_swap,  \
+               double ***     \
+             : doublepp_swap, \
+               uint8_t *      \
+             : uint8_swap)(x, y)
 
 // Matrix utility functions.
 
@@ -133,19 +142,6 @@ static inline void uint8_vector_print(
              : double_vector_print,     \
                uint8_t *                \
              : uint8_vector_print)(n, vector, stream)
-
-static inline void vector_random_shuffle(size_t n, double **vector)
-{
-    srand(time(0));
-    for (size_t i = 0; i < n; i++)
-    {
-        size_t j = rand() % (i + 1);
-        if (i != j)
-        {
-            swap(vector + i, vector + j);
-        }
-    }
-}
 
 // Endianess inversion functions.
 

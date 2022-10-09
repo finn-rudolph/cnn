@@ -358,6 +358,17 @@ void network_backprop(
     }
 }
 
+void shuffle_images(size_t n, double **const images, uint8_t *const labels)
+{
+    srand(time(0));
+    for (size_t i = n - 1; i; i--)
+    {
+        size_t j = rand() % (i + 1);
+        swap(images + i, images + j);
+        swap(labels + i, labels + j);
+    }
+}
+
 void network_descend(network const *const net)
 {
     for (size_t i = 0; i < net->l; i++)
@@ -413,10 +424,11 @@ void network_train(
     }
 
     network_init_backprop(net);
+    network_reset_gradient(net);
 
     for (size_t e = 0; e < epochs; e++)
     {
-        vector_random_shuffle(t, images);
+        shuffle_images(t, images, labels);
         long double cost = 0.0;
 
         for (size_t i = 0; i < t; i++)
@@ -432,7 +444,7 @@ void network_train(
 
             if (!((i + 1) % BATCH_SIZE))
             {
-                network_avg_gradient(net, t);
+                network_avg_gradient(net, BATCH_SIZE);
                 network_descend(net);
                 network_reset_gradient(net);
 
@@ -443,7 +455,7 @@ void network_train(
 
         if (t % BATCH_SIZE)
         {
-            network_avg_gradient(net, t);
+            network_avg_gradient(net, t % BATCH_SIZE);
             network_descend(net);
             printf("%Lg\n", cost);
         }
