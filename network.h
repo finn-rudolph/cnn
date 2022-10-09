@@ -27,6 +27,10 @@ void network_train(
     network const *const restrict net, size_t epochs, size_t t,
     double **const restrict images, uint8_t *const restrict labels);
 
+void network_train_parallel(
+    network const *const restrict net, size_t epochs, size_t t,
+    double **const restrict images, uint8_t *const restrict labels);
+
 void network_save_results(
     char const *const restrict result_fname, size_t t,
     double *const *const restrict result);

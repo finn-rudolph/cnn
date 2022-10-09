@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <assert.h>
 #include <time.h>
+#include <threads.h>
+#include <sys/sysinfo.h>
 
 #include "network.h"
 #include "util.h"
@@ -429,7 +431,7 @@ void network_train(
     for (size_t e = 0; e < epochs; e++)
     {
         shuffle_images(t, images, labels);
-        long double cost = 0.0;
+        double cost = 0.0;
 
         for (size_t i = 0; i < t; i++)
         {
@@ -448,7 +450,7 @@ void network_train(
                 network_descend(net);
                 network_reset_gradient(net);
 
-                printf("%Lg\n", cost);
+                printf("%lg\n", cost);
                 cost = 0.0;
             }
         }
@@ -457,12 +459,186 @@ void network_train(
         {
             network_avg_gradient(net, t % BATCH_SIZE);
             network_descend(net);
-            printf("%Lg\n", cost);
+            printf("%lg\n", cost);
         }
     }
 
     matrix_free(grid_size, u);
     matrix_free(grid_size, v);
+    free(p);
+    free(q);
+}
+
+// Creates duplicates and initializes separate buffers for backpropagation.
+network *network_replicate(network const *const net, size_t n)
+{
+    network *replicas = malloc(n * sizeof(network));
+
+    for (size_t i = 0; i < n; i++)
+    {
+        network *const z = replicas + i;
+        z->l = net->l;
+        z->layers = malloc(z->l * sizeof(layer));
+        memcpy(z->layers, net->layers, net->l * sizeof(layer));
+
+        network_init_backprop(z);
+        network_reset_gradient(z);
+    }
+
+    return replicas;
+}
+
+void network_free_replicas(size_t n, network *const replicas)
+{
+    // Must be done manually as the layer functions would also free the weights
+    // and biases containers.
+    for (size_t i = 0; i < n; i++)
+    {
+        network *const z = replicas + i;
+        for (size_t j = 0; j < z->l; j++)
+        {
+            layer *const x = z->layers + j;
+            switch (x->conv.ltype)
+            {
+            case LTYPE_INPUT:
+            {
+                matrix_free(x->input.n + 2 * x->input.padding, x->input.out);
+                break;
+            }
+            case LTYPE_CONV:
+            {
+                matrix_free(x->conv.n, x->conv.in);
+                matrix_free(x->conv.n + x->conv.k - 1, x->conv.out);
+                matrix_free(x->conv.k, x->conv.kernel_gradient);
+                break;
+            }
+            case LTYPE_FC:
+            {
+                free(x->fc.in);
+                free(x->fc.out);
+                matrix_free(x->fc.n, x->fc.weight_gradient);
+                free(x->fc.bias_gradient);
+                break;
+            }
+            case LTYPE_FLAT:
+            {
+                free(x->flat.in);
+                free(x->flat.out);
+                break;
+            }
+            }
+        }
+
+        free(z->layers);
+    }
+}
+
+typedef struct pass_parallel_args pass_parallel_args;
+struct pass_parallel_args
+{
+    network const *net;
+    size_t t;
+    double **images;
+    uint8_t *labels;
+    double **u, **v, *p, *q;
+    double *cost;
+};
+
+int pass_parallel(void *args)
+{
+    pass_parallel_args *a = args;
+    for (size_t i = 0; i < a->t; i++)
+    {
+        double *result =
+            network_pass_one(a->net, a->images[i], a->u, a->v, a->p, a->q, 1);
+
+        *a->cost += get_cost(result, a->labels[i]);
+
+        memcpy(a->p, result, 10 * sizeof(double));
+        free(result);
+        network_backprop(a->net, a->u, a->v, a->p, a->q);
+    }
+    return 0;
+}
+
+void network_train_parallel(
+    network const *const restrict net, size_t epochs, size_t t,
+    double **const restrict images, uint8_t *const restrict labels)
+{
+    size_t const num_threads = get_nprocs();
+    printf("Using %zu threads.\n", num_threads);
+
+    network *replicas = network_replicate(net, num_threads);
+
+    size_t const grid_size = 28 + 2 * net->layers[0].input.padding;
+
+    double ***u = malloc(num_threads * sizeof(double **)),
+           ***v = malloc(num_threads * sizeof(double **)),
+           **p = malloc(num_threads * sizeof(double *)),
+           **q = malloc(num_threads * sizeof(double *));
+
+    for (size_t i = 0; i < num_threads; i++)
+    {
+        u[i] = malloc(grid_size * sizeof(double *));
+        v[i] = malloc(grid_size * sizeof(double *));
+        p[i] = malloc(square(grid_size) * sizeof(double));
+        q[i] = malloc(square(grid_size) * sizeof(double));
+
+        for (size_t j = 0; j < grid_size; j++)
+        {
+            u[i][j] = malloc(grid_size * sizeof(double));
+            v[i][j] = malloc(grid_size * sizeof(double));
+        }
+    }
+
+    for (size_t e = 0; e < epochs; e++)
+    {
+        shuffle_images(t, images, labels);
+
+        for (size_t i = 0; i < t; i += num_threads * BATCH_SIZE)
+        {
+            double costs[num_threads];
+            thrd_t threads[num_threads];
+            pass_parallel_args args[num_threads];
+
+            for (size_t j = 0; j < num_threads && i + j * BATCH_SIZE < t; j++)
+            {
+                costs[j] = 0.0;
+                args[j] = (pass_parallel_args){
+                    .net = replicas + j,
+                    .t = min(BATCH_SIZE, t - i - j * BATCH_SIZE),
+                    .images = images + i + j * BATCH_SIZE,
+                    .labels = labels + i + j * BATCH_SIZE,
+                    .u = u[j],
+                    .v = v[j],
+                    .p = p[j],
+                    .q = q[j],
+                    .cost = costs + j};
+
+                thrd_create(threads + j, pass_parallel, args + j);
+            }
+
+            double total_cost = 0.0;
+            for (size_t j = 0; j < num_threads && i + j * BATCH_SIZE < t; j++)
+            {
+                thrd_join(threads[j], 0);
+                total_cost += costs[j];
+            }
+
+            printf("%lg\n", total_cost);
+        }
+    }
+
+    free(replicas);
+    for (size_t i = 0; i < num_threads; i++)
+    {
+        matrix_free(grid_size, u[i]);
+        matrix_free(grid_size, v[i]);
+        free(p[i]);
+        free(q[i]);
+    }
+    free(u);
+    free(v);
     free(p);
     free(q);
 }
