@@ -126,6 +126,19 @@ static inline void double_matrix_print(
                double **                   \
              : double_matrix_print)(n, m, matrix, stream)
 
+// Elementwise addition of matrix to out.
+static inline void matrix_add(
+    size_t n, size_t m, double *const *const matrix, double *const *const out)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        for (size_t j = 0; j < m; j++)
+        {
+            out[i][j] += matrix[i][j];
+        }
+    }
+}
+
 // Vector utility functions.
 
 static inline void double_vector_print(
@@ -156,6 +169,14 @@ static inline void uint8_vector_print(
              : double_vector_print,     \
                uint8_t *                \
              : uint8_vector_print)(n, vector, stream)
+
+static inline void vector_add(size_t n, double *const vector, double *const out)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        out[i] += vector[i];
+    }
+}
 
 // Endianess inversion functions.
 

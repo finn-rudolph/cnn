@@ -498,6 +498,7 @@ void network_free_replicas(size_t n, network *const replicas)
         for (size_t j = 0; j < z->l; j++)
         {
             layer *const x = z->layers + j;
+
             switch (x->conv.ltype)
             {
             case LTYPE_INPUT:
@@ -530,6 +531,41 @@ void network_free_replicas(size_t n, network *const replicas)
         }
 
         free(z->layers);
+    }
+}
+
+// Assumes the gradients in net are all set to 0.
+void network_comb_replicas(
+    network const *const net, size_t n, network const *const replicas)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        network const *const z = replicas + i;
+
+        for (size_t j = 0; j < z->l; j++)
+        {
+            layer *const x = z->layers + j, *const y = net->layers + j;
+
+            switch (x->conv.ltype)
+            {
+            case LTYPE_CONV:
+                matrix_add(
+                    x->conv.k, x->conv.k, x->conv.kernel_gradient,
+                    y->conv.kernel_gradient);
+                y->conv.bias_gradient += x->conv.bias_gradient;
+                break;
+
+            case LTYPE_FC:
+                matrix_add(
+                    x->fc.n, x->fc.m, x->fc.weight_gradient,
+                    y->fc.weight_gradient);
+                vector_add(x->fc.n, x->fc.bias_gradient, y->fc.bias_gradient);
+                break;
+
+            default:
+                break;
+            }
+        }
     }
 }
 
@@ -625,7 +661,17 @@ void network_train_parallel(
                 total_cost += costs[j];
             }
 
+            network_comb_replicas(net, num_threads, replicas);
+            network_avg_gradient(net, min(BATCH_SIZE * num_threads, t - i));
+            network_descend(net);
+
             printf("%lg\n", total_cost);
+
+            network_reset_gradient(net);
+            for (size_t i = 0; i < num_threads; i++)
+            {
+                network_reset_gradient(replicas + i);
+            }
         }
     }
 
