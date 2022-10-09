@@ -35,8 +35,8 @@ void input_layer_init_backprop(input_layer *const x);
 void input_layer_free(input_layer *const x);
 
 void input_layer_pass(
-    input_layer const *const x, double const *const image,
-    double *const *const out, bool store_intermed);
+    input_layer const *const x, double *const restrict image,
+    double *const *const restrict out, bool store_intermed);
 
 void input_layer_read(input_layer *const x, FILE *const stream);
 
@@ -63,16 +63,17 @@ void conv_layer_reset_gradient(conv_layer *const x);
 void conv_layer_free(conv_layer *const x);
 
 void conv_layer_pass(
-    conv_layer const *const x, double *const *const in,
-    double *const *const out, bool store_intermed);
+    conv_layer const *const x, double *const *const restrict in,
+    double *const *const restrict out, bool store_intermed);
 
 void conv_layer_update_gradient(
-    conv_layer *const x, double *const *const prev_out,
-    double *const *const delta);
+    conv_layer *const x, double *const *const restrict prev_out,
+    double *const *const restrict delta);
 
 void conv_layer_backprop(
-    conv_layer *const x, double *const *const prev_in, activation_fn prev_fd,
-    double *const *const delta, double *const *const ndelta);
+    conv_layer const *const x, double *const *const restrict prev_in,
+    activation_fn prev_fd, double *const *const restrict delta,
+    double *const *const restrict ndelta);
 
 void conv_layer_avg_gradient(conv_layer *const x, size_t t);
 
@@ -100,18 +101,20 @@ void fc_layer_init_backprop(fc_layer *const x);
 
 void fc_layer_reset_gradient(fc_layer *const x);
 
-void fc_layer_free(fc_layer *const);
+void fc_layer_free(fc_layer *const x);
 
 void fc_layer_pass(
-    fc_layer const *const x, double *const in, double *const out,
-    bool store_intermed);
+    fc_layer const *const x, double *const restrict in,
+    double *const restrict out, bool store_intermed);
 
 void fc_layer_update_gradient(
-    fc_layer *const x, double *const prev_out, double *const delta);
+    fc_layer *const x, double *const restrict prev_out,
+    double *const restrict delta);
 
 void fc_layer_backprop(
-    fc_layer const *const x, double *const prev_in, activation_fn prev_fd,
-    double *const delta, double *const ndelta);
+    fc_layer const *const x, double *const restrict prev_in,
+    activation_fn prev_fd, double *const restrict delta,
+    double *const restrict ndelta);
 
 void fc_layer_avg_gradient(fc_layer const *const x, size_t t);
 
@@ -136,14 +139,17 @@ void flat_layer_init_backprop(flat_layer *const x);
 void flat_layer_free(flat_layer *const x);
 
 void flat_layer_pass(
-    flat_layer const *const x, double *const *const in, double *const out);
+    flat_layer const *const x,
+    double *const *const restrict in, double *const restrict out);
 
 void flat_layer_backprop(
-    flat_layer const *const x, double *const delta, double *const *const ndelta);
+    flat_layer const *const x, double *const restrict delta,
+    double *const *const restrict ndelta);
 
 void flat_layer_read(flat_layer *const x, FILE *const stream);
 
-void flat_layer_print(flat_layer const *const x, FILE *stream);
+void flat_layer_print(
+    flat_layer const *const x, FILE *const stream);
 
 typedef union layer layer;
 union layer

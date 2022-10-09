@@ -393,7 +393,7 @@ void network_descend(network const *const net)
 
 // Softmax in combination with the log-likelihood cost function is used,
 // therefore computing the loss simplifies dramatically.
-void network_get_loss(double *result, uint8_t label)
+void network_get_loss(double *const result, uint8_t label)
 {
     for (size_t i = 0; i < 10; i++)
     {
@@ -401,14 +401,14 @@ void network_get_loss(double *result, uint8_t label)
     }
 }
 
-double get_cost(double *result, uint8_t label)
+double get_cost(double const *const result, uint8_t label)
 {
     return -log(result[label]);
 }
 
 void network_train(
-    network const *const net, size_t epochs, size_t t, double **const images,
-    uint8_t *const labels)
+    network const *const restrict net, size_t epochs, size_t t,
+    double **const restrict images, uint8_t *const restrict labels)
 {
     size_t const grid_size = 28 + 2 * net->layers[0].input.padding;
 
@@ -488,7 +488,8 @@ uint8_t *calc_max_digits(size_t t, double *const *const results)
 }
 
 void network_save_results(
-    char const *const result_fname, size_t t, double *const *const results)
+    char const *const restrict result_fname, size_t t,
+    double *const *const restrict results)
 {
     FILE *stream = fopen(result_fname, "w");
     if (!stream)
@@ -510,7 +511,8 @@ void network_save_results(
 }
 
 void network_print_accuracy(
-    size_t t, double *const *const results, uint8_t *const labels)
+    size_t t, double *const *const restrict results,
+    uint8_t *const restrict labels)
 {
     size_t digit_correct[10], digit_occ[10];
     memset(digit_correct, 0, 10 * sizeof(size_t));
@@ -532,7 +534,8 @@ void network_print_accuracy(
     printf("  Total accuracy: %lg\n", (double)total_correct / (double)t);
     for (uint8_t i = 0; i < 10; i++)
     {
-        printf("  %hhu: %lg\n", i, (double)digit_correct[i] / (double)digit_occ[i]);
+        printf("  %hhu: %lg\n", i,
+               (double)digit_correct[i] / (double)digit_occ[i]);
     }
 
     free(max_digits);
@@ -541,7 +544,7 @@ void network_print_accuracy(
 network network_read(char const *const fname)
 {
     network net;
-    FILE *stream = fopen(fname, "r");
+    FILE *const stream = fopen(fname, "r");
     if (!stream)
     {
         perror("Error while reading network from file");

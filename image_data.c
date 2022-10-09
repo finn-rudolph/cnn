@@ -1,7 +1,8 @@
 #include "image_data.h"
 #include "util.h"
 
-double **read_images(char const *const image_fname, size_t a, size_t b)
+double **read_images(
+    char const *const restrict image_fname, size_t a, size_t b)
 {
     assert(a <= b);
     FILE *stream = fopen(image_fname, "rb");
@@ -45,7 +46,8 @@ double **read_images(char const *const image_fname, size_t a, size_t b)
     return images;
 }
 
-uint8_t *read_labels(char const *const label_fname, size_t a, size_t b)
+uint8_t *read_labels(
+    char const *const restrict label_fname, size_t a, size_t b)
 {
     assert(a <= b);
 

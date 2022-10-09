@@ -42,13 +42,21 @@ static inline void uint8_swap(uint8_t *x, uint8_t *y)
     *y = z;
 }
 
-#define swap(x, y)            \
-    _Generic(x,               \
-             double **        \
-             : doublep_swap,  \
-               double ***     \
-             : doublepp_swap, \
-               uint8_t *      \
+#define swap(x, y)                    \
+    _Generic(x,                       \
+             double **                \
+             : doublep_swap,          \
+               double const **        \
+             : doublep_swap,          \
+               double ***             \
+             : doublepp_swap,         \
+               double const ***       \
+             : doublepp_swap,         \
+               double const *const ** \
+             : doublepp_swap,         \
+               double *const **       \
+             : doublepp_swap,         \
+               uint8_t *              \
              : uint8_swap)(x, y)
 
 // Matrix utility functions.
@@ -63,7 +71,8 @@ static inline double **double_matrix_alloc(size_t n, size_t m)
     return matrix;
 }
 
-static inline void double_matrix_free(size_t n, double **const matrix)
+static inline void double_matrix_free(
+    size_t n, double **matrix)
 {
     for (size_t i = 0; i < n; i++)
     {
@@ -72,13 +81,16 @@ static inline void double_matrix_free(size_t n, double **const matrix)
     free(matrix);
 }
 
-#define matrix_free(n, matrix) \
-    _Generic(matrix,           \
-             double **         \
+#define matrix_free(n, matrix)       \
+    _Generic(matrix,                 \
+             double **               \
+             : double_matrix_free,   \
+               double const *const * \
              : double_matrix_free)(n, matrix)
 
 static inline void double_matrix_copy(
-    size_t n, size_t m, double *const *const in, double *const *const out)
+    size_t n, size_t m, double *const *const restrict in,
+    double *const *const restrict out)
 {
     for (size_t i = 0; i < n; i++)
     {
@@ -86,15 +98,15 @@ static inline void double_matrix_copy(
     }
 }
 
-#define matrix_copy(n, m, in, out) \
-    _Generic(in,                   \
-             double *const *       \
-             : double_matrix_copy, \
-               double **           \
-             : double_matrix_print)(n, m, in, out)
+#define matrix_copy(n, m, in, out)         \
+    _Generic(in,                           \
+             double *const *const restrict \
+             : double_matrix_copy,         \
+               double *const *             \
+             : double_matrix_copy)(n, m, in, out)
 
 static inline void double_matrix_print(
-    size_t n, size_t m, double *const *const matrix, FILE *stream)
+    size_t n, size_t m, double *const *const matrix, FILE *const stream)
 {
     for (size_t i = 0; i < n; i++)
     {
@@ -117,7 +129,7 @@ static inline void double_matrix_print(
 // Vector utility functions.
 
 static inline void double_vector_print(
-    size_t n, double *const vector, FILE *stream)
+    size_t n, double const *const vector, FILE *const stream)
 {
     for (size_t i = 0; i < n; i++)
     {
@@ -127,7 +139,7 @@ static inline void double_vector_print(
 }
 
 static inline void uint8_vector_print(
-    size_t n, uint8_t *const vector, FILE *stream)
+    size_t n, uint8_t const *const vector, FILE *const stream)
 {
     for (size_t i = 0; i < n; i++)
     {
@@ -140,19 +152,21 @@ static inline void uint8_vector_print(
     _Generic(vector,                    \
              double *                   \
              : double_vector_print,     \
+               const double *           \
+             : double_vector_print,     \
                uint8_t *                \
              : uint8_vector_print)(n, vector, stream)
 
 // Endianess inversion functions.
 
-static inline void rev_uint16(uint16_t *x)
+static inline void rev_uint16(uint16_t *const restrict x)
 {
     uint16_t y = (((*x & 0x00FF) << 8) |
                   ((*x & 0xFF00) >> 8));
     *x = y;
 }
 
-static inline void rev_uint32(uint32_t *x)
+static inline void rev_uint32(uint32_t *const restrict x)
 {
     uint32_t y = (((*x & 0x000000FF) << 24) |
                   ((*x & 0x0000FF00) << 8) |
@@ -171,8 +185,8 @@ static inline void rev_uint32(uint32_t *x)
 // Multiplies a vector of length m with a matrix of size n x m and stores the
 // resulting vector of length n in out.
 static inline void mul_matrix_vector(
-    size_t n, size_t m, double const *const in, double *const *const matrix,
-    double *const out)
+    size_t n, size_t m, double const *const restrict in,
+    double *const *const matrix, double *const restrict out)
 {
     for (size_t i = 0; i < n; i++)
     {
@@ -250,7 +264,7 @@ static inline void vrelu_smooth(size_t n, double *const x)
     }
 }
 
-static inline void vrelu_smooth_d(size_t n, double *x)
+static inline void vrelu_smooth_d(size_t n, double *const x)
 {
     for (size_t i = 0; i < n; i++)
     {
@@ -268,7 +282,7 @@ static inline double sigmoid_d(double x)
     return 1.0 / (2.0 + exp(x) + exp(-x));
 }
 
-static inline void vsigmoid(size_t n, double *x)
+static inline void vsigmoid(size_t n, double *const x)
 {
     for (size_t i = 0; i < n; i++)
     {
@@ -276,7 +290,7 @@ static inline void vsigmoid(size_t n, double *x)
     }
 }
 
-static inline void vsigmoid_d(size_t n, double *x)
+static inline void vsigmoid_d(size_t n, double *const x)
 {
     for (size_t i = 0; i < n; i++)
     {

@@ -24,14 +24,16 @@ double **network_pass_forward(
     network const *const net, size_t t, double *const *const images);
 
 void network_train(
-    network const *const net, size_t epochs, size_t t, double **const images,
-    uint8_t *const labels);
+    network const *const restrict net, size_t epochs, size_t t,
+    double **const restrict images, uint8_t *const restrict labels);
 
 void network_save_results(
-    char const *const result_fname, size_t t, double *const *const result);
+    char const *const restrict result_fname, size_t t,
+    double *const *const restrict result);
 
 void network_print_accuracy(
-    size_t t, double *const *const results, uint8_t *const labels);
+    size_t t, double *const *const restrict results,
+    uint8_t *const restrict labels);
 
 network network_read(char const *const fname);
 

@@ -10,9 +10,11 @@
 
 // Images from a to b (exclusive) are read. An image is represented as a
 // one-dimensional array organized by rows.
-double **read_images(char const *const image_fname, size_t a, size_t b);
+double **read_images(
+    char const *const restrict image_fname, size_t a, size_t b);
 
-uint8_t *read_labels(char const *const label_fname, size_t a, size_t b);
+uint8_t *read_labels(
+    char const *const restrict label_fname, size_t a, size_t b);
 
 // Subtracts the mean and divides by the standard deviation. Only use this
 // function on mini-batches, not the whole data, to avoid precision loss.
