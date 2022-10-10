@@ -29,7 +29,7 @@ double **read_images(
     assert(magic_num == 2051);
     assert(b <= t);
 
-    double **images = double_matrix_alloc(b - a, n * m);
+    double **images = matrix_alloc(b - a, n * m);
     fseek(stream, a * n * m, SEEK_CUR);
 
     for (size_t i = 0; i < (b - a); i++)

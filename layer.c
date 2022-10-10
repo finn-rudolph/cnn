@@ -88,7 +88,7 @@ void input_layer_init(input_layer *const x, size_t n, size_t padding)
 
 void input_layer_init_backprop(input_layer *const x)
 {
-    x->out = double_matrix_alloc(x->n + 2 * x->padding, x->n + 2 * x->padding);
+    x->out = matrix_alloc(x->n + 2 * x->padding, x->n + 2 * x->padding);
 }
 
 void input_layer_free(input_layer *const x)
@@ -143,7 +143,7 @@ void conv_layer_init(conv_layer *const x, size_t n, size_t k)
     x->k = k;
     x->f = ACTIVATION;
     x->fd = ACTIVATION_D;
-    x->kernel = double_matrix_alloc(k, k);
+    x->kernel = matrix_alloc(k, k);
 
     x->in = 0;
     x->out = 0;
@@ -153,10 +153,10 @@ void conv_layer_init(conv_layer *const x, size_t n, size_t k)
 
 void conv_layer_init_backprop(conv_layer *const x)
 {
-    x->in = double_matrix_alloc(x->n, x->n);
+    x->in = matrix_alloc(x->n, x->n);
     // Padding size is added, as padding is necessary to compute the gradient.
-    x->out = double_matrix_alloc(x->n + x->k - 1, x->n + x->k - 1);
-    x->kernel_gradient = double_matrix_alloc(x->k, x->k);
+    x->out = matrix_alloc(x->n + x->k - 1, x->n + x->k - 1);
+    x->kernel_gradient = matrix_alloc(x->k, x->k);
     x->bias_gradient = 0.0;
 }
 
@@ -351,7 +351,7 @@ void fc_layer_init(fc_layer *const x, size_t n, size_t m)
     x->m = m;
     x->f = ACTIVATION;
     x->fd = ACTIVATION_D;
-    x->weight = double_matrix_alloc(n, m);
+    x->weight = matrix_alloc(n, m);
     x->bias = malloc(n * sizeof(double));
 
     x->in = 0;
@@ -364,7 +364,7 @@ void fc_layer_init_backprop(fc_layer *const x)
 {
     x->out = malloc(x->n * sizeof(double));
     x->in = malloc(x->n * sizeof(double));
-    x->weight_gradient = double_matrix_alloc(x->n, x->m);
+    x->weight_gradient = matrix_alloc(x->n, x->m);
     x->bias_gradient = malloc(x->n * sizeof(double));
 }
 

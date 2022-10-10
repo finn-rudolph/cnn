@@ -6,7 +6,6 @@
 #include <math.h>
 #include <memory.h>
 #include <stdio.h>
-#include <time.h>
 
 #include "def.h"
 
@@ -61,7 +60,7 @@ static inline void uint8_swap(uint8_t *x, uint8_t *y)
 
 // Matrix utility functions.
 
-static inline double **double_matrix_alloc(size_t n, size_t m)
+static inline double **matrix_alloc(size_t n, size_t m)
 {
     double **matrix = malloc(n * sizeof(double *));
     for (size_t i = 0; i < n; i++)
@@ -71,8 +70,7 @@ static inline double **double_matrix_alloc(size_t n, size_t m)
     return matrix;
 }
 
-static inline void double_matrix_free(
-    size_t n, double **matrix)
+static inline void matrix_free(size_t n, double **matrix)
 {
     for (size_t i = 0; i < n; i++)
     {
@@ -81,31 +79,17 @@ static inline void double_matrix_free(
     free(matrix);
 }
 
-#define matrix_free(n, matrix)       \
-    _Generic(matrix,                 \
-             double **               \
-             : double_matrix_free,   \
-               double const *const * \
-             : double_matrix_free)(n, matrix)
-
-static inline void double_matrix_copy(
-    size_t n, size_t m, double *const *const restrict in,
+static inline void matrix_copy(
+    size_t n, size_t m, double *const *const restrict matrix,
     double *const *const restrict out)
 {
     for (size_t i = 0; i < n; i++)
     {
-        memcpy(out[i], in[i], m * sizeof(double));
+        memcpy(out[i], matrix[i], m * sizeof(double));
     }
 }
 
-#define matrix_copy(n, m, in, out)         \
-    _Generic(in,                           \
-             double *const *const restrict \
-             : double_matrix_copy,         \
-               double *const *             \
-             : double_matrix_copy)(n, m, in, out)
-
-static inline void double_matrix_print(
+static inline void matrix_print(
     size_t n, size_t m, double *const *const matrix, FILE *const stream)
 {
     for (size_t i = 0; i < n; i++)
@@ -119,14 +103,6 @@ static inline void double_matrix_print(
     fputc('\n', stream);
 }
 
-#define matrix_print(n, m, matrix, stream) \
-    _Generic(matrix,                       \
-             double *const *               \
-             : double_matrix_print,        \
-               double **                   \
-             : double_matrix_print)(n, m, matrix, stream)
-
-// Elementwise addition of matrix to out.
 static inline void matrix_add(
     size_t n, size_t m, double *const *const matrix, double *const *const out)
 {
@@ -141,7 +117,7 @@ static inline void matrix_add(
 
 // Vector utility functions.
 
-static inline void double_vector_print(
+static inline void vector_print(
     size_t n, double const *const vector, FILE *const stream)
 {
     for (size_t i = 0; i < n; i++)
@@ -150,25 +126,6 @@ static inline void double_vector_print(
     }
     fputc('\n', stream);
 }
-
-static inline void uint8_vector_print(
-    size_t n, uint8_t const *const vector, FILE *const stream)
-{
-    for (size_t i = 0; i < n; i++)
-    {
-        fprintf(stream, "%hhu ", vector[i]);
-    }
-    fputc('\n', stream);
-}
-
-#define vector_print(n, vector, stream) \
-    _Generic(vector,                    \
-             double *                   \
-             : double_vector_print,     \
-               const double *           \
-             : double_vector_print,     \
-               uint8_t *                \
-             : uint8_vector_print)(n, vector, stream)
 
 static inline void vector_add(size_t n, double *const vector, double *const out)
 {
