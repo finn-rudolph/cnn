@@ -450,7 +450,8 @@ void network_train(
                 network_descend(net);
                 network_reset_gradient(net);
 
-                printf("%lg\n", cost);
+                printf("%lg\n",
+                       cost / (double)BATCH_SIZE);
                 cost = 0.0;
             }
         }
@@ -459,7 +460,7 @@ void network_train(
         {
             network_avg_gradient(net, t % BATCH_SIZE);
             network_descend(net);
-            printf("%lg\n", cost);
+            printf("%lg\n", cost / (double)(t % BATCH_SIZE));
         }
     }
 
@@ -481,8 +482,7 @@ network *network_replicate(network const *const net, size_t n)
         z->layers = malloc(z->l * sizeof(layer));
         memcpy(z->layers, net->layers, net->l * sizeof(layer));
 
-        network_init_backprop(z);
-        network_reset_gradient(z);
+        network_init_backprop(replicas + i);
     }
 
     return replicas;
@@ -589,6 +589,7 @@ int pass_parallel(void *args)
             network_pass_one(a->net, a->images[i], a->u, a->v, a->p, a->q, 1);
 
         *a->cost += get_cost(result, a->labels[i]);
+        network_get_loss(result, a->labels[i]);
 
         memcpy(a->p, result, 10 * sizeof(double));
         free(result);
@@ -627,12 +628,20 @@ void network_train_parallel(
         }
     }
 
+    network_init_backprop(net);
+
     for (size_t e = 0; e < epochs; e++)
     {
         shuffle_images(t, images, labels);
 
         for (size_t i = 0; i < t; i += num_threads * BATCH_SIZE)
         {
+            network_reset_gradient(net);
+            for (size_t j = 0; j < num_threads; j++)
+            {
+                network_reset_gradient(replicas + j);
+            }
+
             double costs[num_threads];
             thrd_t threads[num_threads];
             pass_parallel_args args[num_threads];
@@ -665,13 +674,8 @@ void network_train_parallel(
             network_avg_gradient(net, min(BATCH_SIZE * num_threads, t - i));
             network_descend(net);
 
-            printf("%lg\n", total_cost);
-
-            network_reset_gradient(net);
-            for (size_t i = 0; i < num_threads; i++)
-            {
-                network_reset_gradient(replicas + i);
-            }
+            printf("%lg\n",
+                   total_cost / (double)(min(BATCH_SIZE * num_threads, t - i)));
         }
     }
 
