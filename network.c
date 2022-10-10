@@ -166,35 +166,30 @@ double *network_pass_one(
     return result;
 }
 
-double **network_pass_forward(
-    network const *const net, size_t t, double *const *const images)
+void shuffle_images(size_t n, double **const images, uint8_t *const labels)
 {
-    size_t const grid_size = 28 + 2 * net->layers[0].input.padding;
-    // Two grid containers for convolutional layers, two linear containers for
-    // fully connected layers. Serve as input / output buffer.
-    double **u = malloc(grid_size * sizeof(double *)),
-           **v = malloc(grid_size * sizeof(double *)),
-           *p = malloc(square(grid_size) * sizeof(double)),
-           *q = malloc(square(grid_size) * sizeof(double));
-
-    for (size_t i = 0; i < grid_size; i++)
+    srand(time(0));
+    for (size_t i = n - 1; i; i--)
     {
-        u[i] = malloc(grid_size * sizeof(double));
-        v[i] = malloc(grid_size * sizeof(double));
+        size_t j = rand() % (i + 1);
+        swap(images + i, images + j);
+        swap(labels + i, labels + j);
     }
+}
 
-    double **results = malloc(t * sizeof(double *));
-
-    for (size_t i = 0; i < t; i++)
+// Softmax in combination with the log-likelihood cost function is used,
+// therefore computing the loss simplifies dramatically.
+void get_loss(double *const result, uint8_t label)
+{
+    for (size_t i = 0; i < 10; i++)
     {
-        results[i] = network_pass_one(net, images[i], u, v, p, q, 0);
+        result[i] = result[i] - (double)(label == i);
     }
+}
 
-    matrix_free(grid_size, u);
-    matrix_free(grid_size, v);
-    free(p);
-    free(q);
-    return results;
+double get_cost(double const *const result, uint8_t label)
+{
+    return -log(result[label]);
 }
 
 // Resets the buffers of all layers storing the accumulated gradient to 0.
@@ -235,6 +230,28 @@ void network_avg_gradient(network const *const net, size_t t)
             break;
 
         default:
+            break;
+        }
+    }
+}
+
+void network_descend(network const *const net)
+{
+    for (size_t i = 0; i < net->l; i++)
+    {
+        layer *x = net->layers + i;
+        switch (x->conv.ltype)
+        {
+        case LTYPE_INPUT:
+        case LTYPE_FLAT:
+            break;
+
+        case LTYPE_CONV:
+            conv_layer_descend(&x->conv);
+            break;
+
+        case LTYPE_FC:
+            fc_layer_descend(&x->fc);
             break;
         }
     }
@@ -360,118 +377,8 @@ void network_backprop(
     }
 }
 
-void shuffle_images(size_t n, double **const images, uint8_t *const labels)
-{
-    srand(time(0));
-    for (size_t i = n - 1; i; i--)
-    {
-        size_t j = rand() % (i + 1);
-        swap(images + i, images + j);
-        swap(labels + i, labels + j);
-    }
-}
-
-void network_descend(network const *const net)
-{
-    for (size_t i = 0; i < net->l; i++)
-    {
-        layer *x = net->layers + i;
-        switch (x->conv.ltype)
-        {
-        case LTYPE_INPUT:
-        case LTYPE_FLAT:
-            break;
-
-        case LTYPE_CONV:
-            conv_layer_descend(&x->conv);
-            break;
-
-        case LTYPE_FC:
-            fc_layer_descend(&x->fc);
-            break;
-        }
-    }
-}
-
-// Softmax in combination with the log-likelihood cost function is used,
-// therefore computing the loss simplifies dramatically.
-void network_get_loss(double *const result, uint8_t label)
-{
-    for (size_t i = 0; i < 10; i++)
-    {
-        result[i] = result[i] - (double)(label == i);
-    }
-}
-
-double get_cost(double const *const result, uint8_t label)
-{
-    return -log(result[label]);
-}
-
-void network_train(
-    network const *const restrict net, size_t epochs, size_t t,
-    double **const restrict images, uint8_t *const restrict labels)
-{
-    size_t const grid_size = 28 + 2 * net->layers[0].input.padding;
-
-    double **u = malloc(grid_size * sizeof(double *)),
-           **v = malloc(grid_size * sizeof(double *)),
-           *p = malloc(square(grid_size) * sizeof(double)),
-           *q = malloc(square(grid_size) * sizeof(double));
-
-    for (size_t i = 0; i < grid_size; i++)
-    {
-        u[i] = malloc(grid_size * sizeof(double));
-        v[i] = malloc(grid_size * sizeof(double));
-    }
-
-    network_init_backprop(net);
-    network_reset_gradient(net);
-
-    for (size_t e = 0; e < epochs; e++)
-    {
-        shuffle_images(t, images, labels);
-        double cost = 0.0;
-
-        for (size_t i = 0; i < t; i++)
-        {
-            double *result = network_pass_one(net, images[i], u, v, p, q, 1);
-
-            cost += get_cost(result, labels[i]);
-            network_get_loss(result, labels[i]);
-
-            memcpy(p, result, 10 * sizeof(double));
-            free(result);
-            network_backprop(net, u, v, p, q);
-
-            if (!((i + 1) % BATCH_SIZE))
-            {
-                network_avg_gradient(net, BATCH_SIZE);
-                network_descend(net);
-                network_reset_gradient(net);
-
-                printf("%lg\n",
-                       cost / (double)BATCH_SIZE);
-                cost = 0.0;
-            }
-        }
-
-        if (t % BATCH_SIZE)
-        {
-            network_avg_gradient(net, t % BATCH_SIZE);
-            network_descend(net);
-            printf("%lg\n", cost / (double)(t % BATCH_SIZE));
-        }
-    }
-
-    matrix_free(grid_size, u);
-    matrix_free(grid_size, v);
-    free(p);
-    free(q);
-}
-
 // Creates duplicates and initializes separate buffers for backpropagation.
-network *network_replicate(network const *const net, size_t n)
+network *replicate_net(network const *const net, size_t n)
 {
     network *replicas = malloc(n * sizeof(network));
 
@@ -488,7 +395,7 @@ network *network_replicate(network const *const net, size_t n)
     return replicas;
 }
 
-void network_free_replicas(size_t n, network *const replicas)
+void free_replicas(size_t n, network *const replicas)
 {
     // Must be done manually as the layer functions would also free the weights
     // and biases containers.
@@ -535,7 +442,7 @@ void network_free_replicas(size_t n, network *const replicas)
 }
 
 // Assumes the gradients in net are all set to 0.
-void network_comb_replicas(
+void sum_replica_gradients(
     network const *const net, size_t n, network const *const replicas)
 {
     for (size_t i = 0; i < n; i++)
@@ -569,63 +476,135 @@ void network_comb_replicas(
     }
 }
 
-typedef struct pass_parallel_args pass_parallel_args;
-struct pass_parallel_args
+typedef struct parallel_args parallel_args;
+struct parallel_args
 {
     network const *net;
     size_t t;
     double **images;
     uint8_t *labels;
     double **u, **v, *p, *q;
-    double *cost;
+    double *cost, **results;
+    bool store_cost, store_results, do_backprop;
 };
 
 int pass_parallel(void *args)
 {
-    pass_parallel_args *a = args;
+    parallel_args *a = args;
     for (size_t i = 0; i < a->t; i++)
     {
-        double *result =
-            network_pass_one(a->net, a->images[i], a->u, a->v, a->p, a->q, 1);
+        double *result = network_pass_one(
+            a->net, a->images[i], a->u, a->v, a->p, a->q, a->do_backprop);
 
-        *a->cost += get_cost(result, a->labels[i]);
-        network_get_loss(result, a->labels[i]);
+        if (a->store_cost)
+        {
+            *a->cost += get_cost(result, a->labels[i]);
+        }
+        if (a->store_results)
+        {
+            a->results[i] = result;
+        }
+        if (a->do_backprop)
+        {
+            get_loss(result, a->labels[i]);
+            memcpy(a->p, result, 10 * sizeof(double));
+            network_backprop(a->net, a->u, a->v, a->p, a->q);
+        }
 
-        memcpy(a->p, result, 10 * sizeof(double));
-        free(result);
-        network_backprop(a->net, a->u, a->v, a->p, a->q);
+        if (!a->store_results)
+        {
+            free(result);
+        }
     }
     return 0;
 }
 
-void network_train_parallel(
+double **network_pass_forward(
+    network const *const restrict net, size_t t, double **const restrict images)
+{
+    size_t const num_threads = get_nprocs();
+    printf("Using %zu threads.\n", num_threads);
+
+    size_t const grid_size = 28 + 2 * net->layers[0].input.padding;
+
+    double ***u = malloc(num_threads * sizeof(double **)),
+           ***v = malloc(num_threads * sizeof(double **)),
+           **p = matrix_alloc(num_threads, square(grid_size)),
+           **q = matrix_alloc(num_threads, square(grid_size));
+
+    for (size_t i = 0; i < num_threads; i++)
+    {
+        u[i] = matrix_alloc(grid_size, grid_size);
+        v[i] = matrix_alloc(grid_size, grid_size);
+    }
+
+    network_init_backprop(net);
+    double **results = malloc(t * sizeof(double *));
+
+    for (size_t i = 0; i < t; i += num_threads * BATCH_SIZE)
+    {
+        thrd_t threads[num_threads];
+        parallel_args args[num_threads];
+
+        for (size_t j = 0; j < num_threads && i + j * BATCH_SIZE < t; j++)
+        {
+            args[j] = (parallel_args){
+                .net = net,
+                .t = min(BATCH_SIZE, t - i - j * BATCH_SIZE),
+                .images = images + i + j * BATCH_SIZE,
+                .labels = 0,
+                .u = u[j],
+                .v = v[j],
+                .p = p[j],
+                .q = q[j],
+                .cost = 0,
+                .results = results + i + j * BATCH_SIZE,
+                .store_cost = 0,
+                .store_results = 1,
+                .do_backprop = 0};
+
+            thrd_create(threads + j, pass_parallel, args + j);
+        }
+
+        for (size_t j = 0; j < num_threads && i + j * BATCH_SIZE < t; j++)
+        {
+            thrd_join(threads[j], 0);
+        }
+    }
+
+    for (size_t i = 0; i < num_threads; i++)
+    {
+        matrix_free(grid_size, u[i]);
+        matrix_free(grid_size, v[i]);
+    }
+    free(u);
+    free(v);
+    matrix_free(num_threads, p);
+    matrix_free(num_threads, q);
+
+    return results;
+}
+
+void network_train(
     network const *const restrict net, size_t epochs, size_t t,
     double **const restrict images, uint8_t *const restrict labels)
 {
     size_t const num_threads = get_nprocs();
     printf("Using %zu threads.\n", num_threads);
 
-    network *replicas = network_replicate(net, num_threads);
+    network *replicas = replicate_net(net, num_threads);
 
     size_t const grid_size = 28 + 2 * net->layers[0].input.padding;
 
     double ***u = malloc(num_threads * sizeof(double **)),
            ***v = malloc(num_threads * sizeof(double **)),
-           **p = malloc(num_threads * sizeof(double *)),
-           **q = malloc(num_threads * sizeof(double *));
+           **p = matrix_alloc(num_threads, square(grid_size)),
+           **q = matrix_alloc(num_threads, square(grid_size));
 
     for (size_t i = 0; i < num_threads; i++)
     {
-        u[i] = malloc(grid_size * sizeof(double *));
-        v[i] = malloc(grid_size * sizeof(double *));
-        p[i] = malloc(square(grid_size) * sizeof(double));
-        q[i] = malloc(square(grid_size) * sizeof(double));
-
-        for (size_t j = 0; j < grid_size; j++)
-        {
-            u[i][j] = malloc(grid_size * sizeof(double));
-            v[i][j] = malloc(grid_size * sizeof(double));
-        }
+        u[i] = matrix_alloc(grid_size, grid_size);
+        v[i] = matrix_alloc(grid_size, grid_size);
     }
 
     network_init_backprop(net);
@@ -644,12 +623,12 @@ void network_train_parallel(
 
             double costs[num_threads];
             thrd_t threads[num_threads];
-            pass_parallel_args args[num_threads];
+            parallel_args args[num_threads];
 
             for (size_t j = 0; j < num_threads && i + j * BATCH_SIZE < t; j++)
             {
                 costs[j] = 0.0;
-                args[j] = (pass_parallel_args){
+                args[j] = (parallel_args){
                     .net = replicas + j,
                     .t = min(BATCH_SIZE, t - i - j * BATCH_SIZE),
                     .images = images + i + j * BATCH_SIZE,
@@ -658,7 +637,11 @@ void network_train_parallel(
                     .v = v[j],
                     .p = p[j],
                     .q = q[j],
-                    .cost = costs + j};
+                    .cost = costs + j,
+                    .results = 0,
+                    .store_cost = 1,
+                    .store_results = 0,
+                    .do_backprop = 1};
 
                 thrd_create(threads + j, pass_parallel, args + j);
             }
@@ -670,7 +653,7 @@ void network_train_parallel(
                 total_cost += costs[j];
             }
 
-            network_comb_replicas(net, num_threads, replicas);
+            sum_replica_gradients(net, num_threads, replicas);
             network_avg_gradient(net, min(BATCH_SIZE * num_threads, t - i));
             network_descend(net);
 
@@ -679,7 +662,9 @@ void network_train_parallel(
         }
     }
 
+    free_replicas(num_threads, replicas);
     free(replicas);
+
     for (size_t i = 0; i < num_threads; i++)
     {
         matrix_free(grid_size, u[i]);

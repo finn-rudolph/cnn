@@ -175,7 +175,7 @@ int main(int argc, char **argv)
         printf("Number of training epochs: ");
         scanf("%zu", &epochs);
 
-        network_train_parallel(&net, epochs, b - a, images, labels);
+        network_train(&net, epochs, b - a, images, labels);
         network_print(&net, new_fname);
 
         matrix_free(b - a, images);

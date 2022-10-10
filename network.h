@@ -16,18 +16,12 @@ struct network
 network network_init(
     size_t num_conv, size_t num_fc, size_t kernel_size, size_t fc_size);
 
-void network_init_backprop(network const *const net);
-
 void network_free(network *const net);
 
 double **network_pass_forward(
-    network const *const net, size_t t, double *const *const images);
+    network const *const restrict net, size_t t, double **const restrict images);
 
 void network_train(
-    network const *const restrict net, size_t epochs, size_t t,
-    double **const restrict images, uint8_t *const restrict labels);
-
-void network_train_parallel(
     network const *const restrict net, size_t epochs, size_t t,
     double **const restrict images, uint8_t *const restrict labels);
 
