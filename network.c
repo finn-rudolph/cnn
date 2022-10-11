@@ -587,7 +587,8 @@ double **network_pass_forward(
 
 void network_train(
     network const *const restrict net, size_t epochs, size_t t,
-    double **const restrict images, uint8_t *const restrict labels)
+    double **const restrict images, uint8_t *const restrict labels,
+    char const *const restrict fname)
 {
     size_t const num_threads = get_nprocs();
     printf("Using %zu threads.\n", num_threads);
@@ -660,6 +661,8 @@ void network_train(
             printf("%lg\n",
                    total_cost / (double)(min(BATCH_SIZE * num_threads, t - i)));
         }
+
+        network_print(net, fname);
     }
 
     free_replicas(num_threads, replicas);
@@ -698,7 +701,7 @@ uint8_t *calc_max_digits(size_t t, double *const *const results)
     return max_digits;
 }
 
-void network_save_results(
+void network_print_results(
     char const *const restrict result_fname, size_t t,
     double *const *const restrict results)
 {

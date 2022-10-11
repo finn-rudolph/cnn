@@ -134,7 +134,7 @@ int main(int argc, char **argv)
         scanf("%s", result_fname);
 
         double **const results = network_pass_forward(&net, b - a, images);
-        network_save_results(result_fname, b - a, results);
+        network_print_results(result_fname, b - a, results);
 
         matrix_free(b - a, images);
         matrix_free(b - a, results);
@@ -175,8 +175,7 @@ int main(int argc, char **argv)
         printf("Number of training epochs: ");
         scanf("%zu", &epochs);
 
-        network_train(&net, epochs, b - a, images, labels);
-        network_print(&net, new_fname);
+        network_train(&net, epochs, b - a, images, labels, new_fname);
 
         matrix_free(b - a, images);
         free(labels);

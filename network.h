@@ -23,9 +23,10 @@ double **network_pass_forward(
 
 void network_train(
     network const *const restrict net, size_t epochs, size_t t,
-    double **const restrict images, uint8_t *const restrict labels);
+    double **const restrict images, uint8_t *const restrict labels,
+    char const *const restrict fname);
 
-void network_save_results(
+void network_print_results(
     char const *const restrict result_fname, size_t t,
     double *const *const restrict result);
 
