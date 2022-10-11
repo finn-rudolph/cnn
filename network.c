@@ -801,7 +801,8 @@ network network_read(char const *const fname)
     return net;
 }
 
-void network_print(network const *const net, char const *const fname)
+void network_print(
+    network const *const restrict net, char const *const restrict fname)
 {
     FILE *stream = fopen(fname, "w");
     if (!stream)

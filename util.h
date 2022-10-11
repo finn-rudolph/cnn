@@ -96,7 +96,7 @@ static inline void matrix_print(
     {
         for (size_t j = 0; j < m; j++)
         {
-            fprintf(stream, "%lg ", matrix[i][j]);
+            fprintf(stream, "%.14lg ", matrix[i][j]);
         }
         fputc('\n', stream);
     }
@@ -122,7 +122,7 @@ static inline void vector_print(
 {
     for (size_t i = 0; i < n; i++)
     {
-        fprintf(stream, "%lg ", vector[i]);
+        fprintf(stream, "%.14lg ", vector[i]);
     }
     fputc('\n', stream);
 }

@@ -36,6 +36,7 @@ void network_print_accuracy(
 
 network network_read(char const *const fname);
 
-void network_print(network const *const net, char const *const fname);
+void network_print(
+    network const *const restrict net, char const *const restrict fname);
 
 #endif

@@ -340,7 +340,7 @@ void conv_layer_read(conv_layer *const x, FILE *const stream)
 
 void conv_layer_print(conv_layer const *const x, FILE *const stream)
 {
-    fprintf(stream, "%zu %zu\n%lg\n", x->n, x->k, x->bias);
+    fprintf(stream, "%zu %zu\n%.14lg\n", x->n, x->k, x->bias);
     matrix_print(x->k, x->k, x->kernel, stream);
 }
 
