@@ -242,16 +242,15 @@ void network_descend(network const *const net)
         layer *x = net->layers + i;
         switch (x->conv.ltype)
         {
-        case LTYPE_INPUT:
-        case LTYPE_FLAT:
-            break;
-
         case LTYPE_CONV:
             conv_layer_descend(&x->conv);
             break;
 
         case LTYPE_FC:
             fc_layer_descend(&x->fc);
+            break;
+
+        default:
             break;
         }
     }
@@ -445,6 +444,8 @@ void free_replicas(size_t n, network *const replicas)
 void sum_replica_gradients(
     network const *const net, size_t n, network const *const replicas)
 {
+    assert(net->l == replicas[0].l);
+
     for (size_t i = 0; i < n; i++)
     {
         network const *const z = replicas + i;
@@ -538,7 +539,6 @@ double **network_pass_forward(
         v[i] = matrix_alloc(grid_size, grid_size);
     }
 
-    network_init_backprop(net);
     double **results = malloc(t * sizeof(double *));
 
     for (size_t i = 0; i < t; i += num_threads * BATCH_SIZE)
@@ -778,6 +778,7 @@ network network_read(char const *const fname)
         switch (x->conv.ltype)
         {
         case LTYPE_INPUT:
+            assert(!i);
             input_layer_read(&x->input, stream);
             break;
 

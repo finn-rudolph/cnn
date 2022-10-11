@@ -1,4 +1,5 @@
 #include <memory.h>
+#include <assert.h>
 
 #include "convolution.h"
 #include "def.h"
@@ -9,6 +10,7 @@
 // half the kernel size just fits in.
 void pad_avg(size_t n, size_t k, double *const *const matrix)
 {
+    assert(k < n);
     size_t const s = k / 2;
 
     for (size_t d = 0; d < s; d++)
@@ -41,6 +43,7 @@ void pad_avg(size_t n, size_t k, double *const *const matrix)
 
 void pad_zero(size_t n, size_t k, double *const *const matrix)
 {
+    assert(k < n);
     size_t const s = k / 2;
 
     for (size_t d = 0; d < s; d++)
@@ -80,6 +83,8 @@ double **remove_padding(size_t n, size_t padding, double *const *const matrix)
 
 void input_layer_init(input_layer *const x, size_t n, size_t padding)
 {
+    assert(padding < n / 2);
+
     x->ltype = LTYPE_INPUT;
     x->n = n;
     x->padding = padding;
@@ -162,6 +167,8 @@ void conv_layer_init_backprop(conv_layer *const x)
 
 void conv_layer_reset_gradient(conv_layer *const x)
 {
+    assert(x->kernel_gradient);
+
     for (size_t i = 0; i < x->k; i++)
     {
         for (size_t j = 0; j < x->k; j++)
@@ -244,6 +251,8 @@ void conv_layer_update_gradient(
     conv_layer *const x, double *const *const restrict prev_out,
     double *const *const restrict delta)
 {
+    assert(x->kernel_gradient);
+
     // Convolve the current layer's deltas with the previous layer's outputs to
     // get the gradient for the kernel.
 
@@ -294,6 +303,8 @@ void conv_layer_backprop(
 
 void conv_layer_avg_gradient(conv_layer *const x, size_t t)
 {
+    assert(x->kernel_gradient);
+
     for (size_t i = 0; i < x->k; i++)
     {
         for (size_t j = 0; j < x->k; j++)
@@ -306,6 +317,8 @@ void conv_layer_avg_gradient(conv_layer *const x, size_t t)
 
 void conv_layer_descend(conv_layer *const x)
 {
+    assert(x->kernel_gradient);
+
     for (size_t i = 0; i < x->k; i++)
     {
         for (size_t j = 0; j < x->k; j++)
@@ -370,6 +383,8 @@ void fc_layer_init_backprop(fc_layer *const x)
 
 void fc_layer_reset_gradient(fc_layer *const x)
 {
+    assert(x->weight_gradient && x->bias_gradient);
+
     for (size_t i = 0; i < x->n; i++)
     {
         for (size_t j = 0; j < x->m; j++)
@@ -447,6 +462,8 @@ void fc_layer_update_gradient(
     fc_layer *const x, double *const restrict prev_out,
     double *const restrict delta)
 {
+    assert(x->weight_gradient && x->bias_gradient);
+
     for (size_t i = 0; i < x->n; i++)
     {
         for (size_t j = 0; j < x->m; j++)
@@ -482,6 +499,8 @@ void fc_layer_backprop(
 
 void fc_layer_avg_gradient(fc_layer const *const x, size_t t)
 {
+    assert(x->weight_gradient && x->bias_gradient);
+
     for (size_t i = 0; i < x->n; i++)
     {
         for (size_t j = 0; j < x->m; j++)
@@ -494,6 +513,8 @@ void fc_layer_avg_gradient(fc_layer const *const x, size_t t)
 
 void fc_layer_descend(fc_layer *const x)
 {
+    assert(x->weight_gradient && x->bias_gradient);
+
     for (size_t i = 0; i < x->n; i++)
     {
         for (size_t j = 0; j < x->m; j++)
