@@ -80,8 +80,8 @@ static inline void matrix_free(size_t n, double **matrix)
 }
 
 static inline void matrix_copy(
-    size_t n, size_t m, double *const *const restrict matrix,
-    double *const *const restrict out)
+    size_t n, size_t m, double *const *const matrix,
+    double *const *const out)
 {
     for (size_t i = 0; i < n; i++)
     {
@@ -137,14 +137,14 @@ static inline void vector_add(size_t n, double *const vector, double *const out)
 
 // Endianess inversion functions.
 
-static inline void rev_uint16(uint16_t *const restrict x)
+static inline void rev_uint16(uint16_t *const x)
 {
     uint16_t y = (((*x & 0x00FF) << 8) |
                   ((*x & 0xFF00) >> 8));
     *x = y;
 }
 
-static inline void rev_uint32(uint32_t *const restrict x)
+static inline void rev_uint32(uint32_t *const x)
 {
     uint32_t y = (((*x & 0x000000FF) << 24) |
                   ((*x & 0x0000FF00) << 8) |
@@ -163,8 +163,8 @@ static inline void rev_uint32(uint32_t *const restrict x)
 // Multiplies a vector of length m with a matrix of size n x m and stores the
 // resulting vector of length n in out.
 static inline void mul_matrix_vector(
-    size_t n, size_t m, double const *const restrict in,
-    double *const *const matrix, double *const restrict out)
+    size_t n, size_t m, double const *const in,
+    double *const *const matrix, double *const out)
 {
     for (size_t i = 0; i < n; i++)
     {

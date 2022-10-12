@@ -521,7 +521,7 @@ int pass_parallel(void *args)
 }
 
 double **network_pass_forward(
-    network const *const restrict net, size_t t, double **const restrict images)
+    network const *const net, size_t t, double **const images)
 {
     size_t const num_threads = get_nprocs();
     printf("Using %zu threads.\n", num_threads);
@@ -586,9 +586,9 @@ double **network_pass_forward(
 }
 
 void network_train(
-    network const *const restrict net, size_t epochs, size_t t,
-    double **const restrict images, uint8_t *const restrict labels,
-    char const *const restrict fname)
+    network const *const net, size_t epochs, size_t t,
+    double **const images, uint8_t *const labels,
+    char const *const fname)
 {
     size_t const num_threads = get_nprocs();
     printf("Using %zu threads.\n", num_threads);
@@ -702,8 +702,8 @@ uint8_t *calc_max_digits(size_t t, double *const *const results)
 }
 
 void network_print_results(
-    char const *const restrict result_fname, size_t t,
-    double *const *const restrict results)
+    char const *const result_fname, size_t t,
+    double *const *const results)
 {
     FILE *stream = fopen(result_fname, "w");
     if (!stream)
@@ -725,8 +725,8 @@ void network_print_results(
 }
 
 void network_print_accuracy(
-    size_t t, double *const *const restrict results,
-    uint8_t *const restrict labels)
+    size_t t, double *const *const results,
+    uint8_t *const labels)
 {
     size_t digit_correct[10], digit_occ[10];
     memset(digit_correct, 0, 10 * sizeof(size_t));
@@ -803,7 +803,7 @@ network network_read(char const *const fname)
 }
 
 void network_print(
-    network const *const restrict net, char const *const restrict fname)
+    network const *const net, char const *const fname)
 {
     FILE *stream = fopen(fname, "w");
     if (!stream)

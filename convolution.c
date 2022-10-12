@@ -2,8 +2,8 @@
 #include "util.h"
 
 void convolve(
-    size_t n, size_t k, double *const *const restrict in,
-    double *const *const restrict out, double *const *const restrict kernel,
+    size_t n, size_t k, double *const *const in,
+    double *const *const out, double *const *const kernel,
     bool additive)
 {
     for (size_t i = 0; i < n - k + 1; i++)
@@ -24,8 +24,8 @@ void convolve(
 }
 
 void convolve_pad(
-    size_t n, size_t k, double *const *const restrict in,
-    double *const *const restrict out, double *const *const restrict kernel,
+    size_t n, size_t k, double *const *const in,
+    double *const *const out, double *const *const kernel,
     bool additive)
 {
     size_t const s = k / 2;

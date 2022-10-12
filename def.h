@@ -2,7 +2,7 @@
 #define DEF_H 1
 
 // #define DEBUG_MODE 1
-// #define NDEBUG 1
+#define NDEBUG 1
 
 #define ACTIVATION &vsigmoid
 #define ACTIVATION_D &sigmoid_d
@@ -17,6 +17,6 @@
 #define LEARN_RATE -0.1
 
 #define BATCH_SIZE 125
-#define NORMALIZATION_BATCH_SIZE 100
+#define NORMALIZATION_BATCH_SIZE 1000
 
 #endif

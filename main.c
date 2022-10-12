@@ -180,6 +180,7 @@ int main(int argc, char **argv)
         matrix_free(b - a, images);
         free(labels);
         network_free(&net);
+
         break;
     }
     }
