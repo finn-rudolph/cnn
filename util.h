@@ -96,7 +96,7 @@ static inline void matrix_print(
     {
         for (size_t j = 0; j < m; j++)
         {
-            fprintf(stream, "%.14lg ", matrix[i][j]);
+            fprintf(stream, "%lg ", matrix[i][j]);
         }
         fputc('\n', stream);
     }
@@ -122,7 +122,7 @@ static inline void vector_print(
 {
     for (size_t i = 0; i < n; i++)
     {
-        fprintf(stream, "%.14lg ", vector[i]);
+        fprintf(stream, "%lg ", vector[i]);
     }
     fputc('\n', stream);
 }
@@ -200,12 +200,12 @@ static inline double **flip_kernel(size_t k, double *const *const kernel)
 
 static inline double relu(double x)
 {
-    return min(max(0.0, x), VALUE_MAX);
+    return max(0.0, x);
 }
 
 static inline double relu_d(double x)
 {
-    return (x > 0.0 && x < VALUE_MAX) ? 1.0 : 0.0;
+    return x > 0.0 ? 1.0 : 0.0;
 }
 
 static inline void vrelu(size_t n, double *const x)

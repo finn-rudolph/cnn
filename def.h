@@ -2,7 +2,7 @@
 #define DEF_H 1
 
 // #define DEBUG_MODE 1
-#define NDEBUG 1
+// #define NDEBUG 1
 
 #define ACTIVATION &vsigmoid
 #define ACTIVATION_D &sigmoid_d
@@ -13,8 +13,6 @@
 
 #define PARAM_MIN -1.0 // Only for initializing the network.
 #define PARAM_MAX 1.0
-
-#define VALUE_MAX 1e9 // Maximum possible activation of a neuron.
 
 #define LEARN_RATE -0.1
 
