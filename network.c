@@ -477,6 +477,29 @@ void sum_replica_gradients(
     }
 }
 
+void update_replicas(
+    network const *const net, size_t n, network const *const replicas)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        network const *const z = replicas + i;
+
+        for (size_t j = 0; j < net->l; j++)
+        {
+            layer *const x = z->layers + j, *const y = net->layers + j;
+
+            switch (x->conv.ltype)
+            {
+            case LTYPE_CONV:
+                x->conv.bias = y->conv.bias;
+
+            default:
+                break;
+            }
+        }
+    }
+}
+
 typedef struct parallel_args parallel_args;
 struct parallel_args
 {
@@ -657,6 +680,7 @@ void network_train(
             sum_replica_gradients(net, num_threads, replicas);
             network_avg_gradient(net, min(BATCH_SIZE * num_threads, t - i));
             network_descend(net);
+            update_replicas(net, num_threads, replicas);
 
             printf("%lg\n",
                    total_cost / (double)(min(BATCH_SIZE * num_threads, t - i)));
