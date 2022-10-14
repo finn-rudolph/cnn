@@ -192,6 +192,42 @@ double get_cost(double const *const result, uint8_t label)
     return -log(result[label]);
 }
 
+double get_regularization_cost(network const *const net, size_t t)
+{
+    double cost = 0.0;
+    for (size_t i = 0; i < net->l; i++)
+    {
+        layer const *const x = net->layers + i;
+
+        switch (x->conv.ltype)
+        {
+        case LTYPE_CONV:
+            for (size_t j = 0; j < x->conv.k; j++)
+            {
+                for (size_t k = 0; k < x->conv.k; k++)
+                {
+                    cost += square(x->conv.kernel[j][k]);
+                }
+            }
+            break;
+
+        case LTYPE_FC:
+            for (size_t j = 0; j < x->fc.n; j++)
+            {
+                for (size_t k = 0; k < x->fc.m; k++)
+                {
+                    cost += square(x->fc.weight[j][k]);
+                }
+            }
+            break;
+
+        default:
+            break;
+        }
+    }
+    return cost * REGULARIZATION_PARAM / (2.0 * (double)t);
+}
+
 // Resets the buffers of all layers storing the accumulated gradient to 0.
 void network_reset_gradient(network const *const net)
 {
@@ -611,11 +647,12 @@ void network_train(
     }
 
     network_init_backprop(net);
+    printf("Printing unregularized cost, regularization cost in each epoch.\n");
 
     for (size_t e = 0; e < epochs; e++)
     {
         shuffle_images(t, images, labels);
-        long double cost = 0.0;
+        double cost = 0.0;
 
         for (size_t i = 0; i < t; i += num_threads * BATCH_SIZE)
         {
@@ -662,7 +699,8 @@ void network_train(
         }
 
         network_print(net, fname);
-        printf("%Lg\n", cost / (double)t);
+        double regularization_cost = get_regularization_cost(net, t);
+        printf("%-7lg, %-7lg\n", cost / (double)t, regularization_cost);
     }
 
     free_replicas(num_threads, replicas);
