@@ -14,9 +14,9 @@
 #define PARAM_MIN -1.0 // Only for initializing the network.
 #define PARAM_MAX 1.0
 
-#define LEARN_RATE -0.1
+#define LEARN_RATE 0.1
 
-#define BATCH_SIZE 125
+#define BATCH_SIZE 125 // The batch size per thread.
 #define NORMALIZATION_BATCH_SIZE 1000
 
 #endif

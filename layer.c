@@ -324,10 +324,10 @@ void conv_layer_descend(conv_layer *const x)
     {
         for (size_t j = 0; j < x->k; j++)
         {
-            x->kernel[i][j] += x->kernel_gradient[i][j] * LEARN_RATE;
+            x->kernel[i][j] -= x->kernel_gradient[i][j] * LEARN_RATE;
         }
     }
-    x->bias += x->bias_gradient * LEARN_RATE;
+    x->bias -= x->bias_gradient * LEARN_RATE;
 
 #ifdef DEBUG_MODE
 
@@ -423,7 +423,7 @@ void fc_layer_pass(
     fc_layer const *const x, double *const in,
     double *const out, bool store_intermed)
 {
-    mul_matrix_vector(x->n, x->m, in, x->weight, out);
+    vector_mul_matrix(x->n, x->m, in, x->weight, out);
 
     for (size_t i = 0; i < x->n; i++)
     {
@@ -520,9 +520,9 @@ void fc_layer_descend(fc_layer *const x)
     {
         for (size_t j = 0; j < x->m; j++)
         {
-            x->weight[i][j] += x->weight_gradient[i][j] * LEARN_RATE;
+            x->weight[i][j] -= x->weight_gradient[i][j] * LEARN_RATE;
         }
-        x->bias[i] += x->bias_gradient[i] * LEARN_RATE;
+        x->bias[i] -= x->bias_gradient[i] * LEARN_RATE;
     }
 
 #ifdef DEBUG_MODE

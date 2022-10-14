@@ -135,6 +135,22 @@ static inline void vector_add(size_t n, double *const vector, double *const out)
     }
 }
 
+// Multiplies a vector of length m with a matrix of size n x m and stores the
+// resulting vector of length n in out.
+static inline void vector_mul_matrix(
+    size_t n, size_t m, double const *const in,
+    double *const *const matrix, double *const out)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        out[i] = 0.0;
+        for (size_t j = 0; j < m; j++)
+        {
+            out[i] += in[j] * matrix[i][j];
+        }
+    }
+}
+
 // Endianess inversion functions.
 
 static inline void rev_uint16(uint16_t *const x)
@@ -159,22 +175,6 @@ static inline void rev_uint32(uint32_t *const x)
              : rev_uint16, \
                uint32_t *  \
              : rev_uint32)(x)
-
-// Multiplies a vector of length m with a matrix of size n x m and stores the
-// resulting vector of length n in out.
-static inline void mul_matrix_vector(
-    size_t n, size_t m, double const *const in,
-    double *const *const matrix, double *const out)
-{
-    for (size_t i = 0; i < n; i++)
-    {
-        out[i] = 0.0;
-        for (size_t j = 0; j < m; j++)
-        {
-            out[i] += in[j] * matrix[i][j];
-        }
-    }
-}
 
 static inline double **flip_kernel(size_t k, double *const *const kernel)
 {
