@@ -2,7 +2,7 @@
 #include <assert.h>
 
 #include "convolution.h"
-#include "def.h"
+#include "network_config.h"
 #include "layer.h"
 #include "util.h"
 

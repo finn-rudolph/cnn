@@ -6,8 +6,6 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "def.h"
-
 // Images from a to b (exclusive) are read. An image is represented as a
 // one-dimensional array organized by rows.
 double **read_images(

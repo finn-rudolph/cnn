@@ -9,7 +9,7 @@
 
 #include "network.h"
 #include "util.h"
-#include "def.h"
+#include "network_config.h"
 
 network network_init(
     size_t num_conv, size_t num_fc, size_t kernel_size, size_t fc_size)

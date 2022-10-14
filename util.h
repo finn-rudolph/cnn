@@ -7,8 +7,6 @@
 #include <memory.h>
 #include <stdio.h>
 
-#include "def.h"
-
 #define square(x) ((x) * (x))
 #define min(x, y) (((x) < (y)) ? (x) : (y))
 #define max(x, y) (((x) > (y)) ? (x) : (y))

@@ -1,5 +1,5 @@
-#ifndef DEF_H
-#define DEF_H 1
+#ifndef NETWORK_CONFIG_H
+#define NETWORK_CONFIG_H 1
 
 // #define DEBUG_MODE 1
 #define NDEBUG 1

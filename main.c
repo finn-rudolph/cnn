@@ -4,7 +4,6 @@
 #include "image_data.h"
 #include "network.h"
 #include "util.h"
-#include "def.h"
 
 enum net_command
 {

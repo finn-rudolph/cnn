@@ -1,5 +1,6 @@
 #include "image_data.h"
 #include "util.h"
+#include "network_config.h"
 
 double **read_images(
     char const *const image_fname, size_t a, size_t b)

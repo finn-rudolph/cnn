@@ -6,8 +6,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#include "def.h"
-
 typedef enum layer_type layer_type;
 enum layer_type
 {

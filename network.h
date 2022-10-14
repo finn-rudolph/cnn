@@ -4,7 +4,6 @@
 #include <stdbool.h>
 
 #include "layer.h"
-#include "def.h"
 
 typedef struct network network;
 struct network
