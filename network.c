@@ -636,6 +636,7 @@ void network_train(
     for (size_t e = 0; e < epochs; e++)
     {
         shuffle_images(t, images, labels);
+        long double cost = 0.0;
 
         for (size_t i = 0; i < t; i += num_threads * BATCH_SIZE)
         {
@@ -670,23 +671,20 @@ void network_train(
                 thrd_create(threads + j, pass_parallel, args + j);
             }
 
-            double total_cost = 0.0;
             for (size_t j = 0; j < num_threads && i + j * BATCH_SIZE < t; j++)
             {
                 thrd_join(threads[j], 0);
-                total_cost += costs[j];
+                cost += costs[j];
             }
 
             sum_replica_gradients(net, num_threads, replicas);
             network_avg_gradient(net, min(BATCH_SIZE * num_threads, t - i));
             network_descend(net);
             update_replicas(net, num_threads, replicas);
-
-            printf("%lg\n",
-                   total_cost / (double)(min(BATCH_SIZE * num_threads, t - i)));
         }
 
         network_print(net, fname);
+        printf("%Lg\n", cost / (double)t);
     }
 
     free_replicas(num_threads, replicas);
@@ -769,10 +767,10 @@ void network_print_accuracy(
         digit_occ[labels[i]]++;
     }
 
-    printf("  Total accuracy: %lg\n", (double)total_correct / (double)t);
+    printf("Total accuracy: %lg\n", (double)total_correct / (double)t);
     for (uint8_t i = 0; i < 10; i++)
     {
-        printf("  %hhu: %lg\n", i,
+        printf("%hhu: %lg\n", i,
                (double)digit_correct[i] / (double)digit_occ[i]);
     }
 
