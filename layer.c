@@ -302,7 +302,7 @@ void conv_layer_backprop(
 #endif
 }
 
-void conv_layer_avg_gradient(conv_layer *const x, size_t t)
+void conv_layer_descend(conv_layer *const x, size_t t)
 {
     assert(x->kernel_gradient);
 
@@ -310,24 +310,13 @@ void conv_layer_avg_gradient(conv_layer *const x, size_t t)
     {
         for (size_t j = 0; j < x->k; j++)
         {
-            x->kernel_gradient[i][j] /= t;
+            x->kernel[i][j] *=
+                (1.0 - (LEARN_RATE * REGULARIZATION_PARAM) / (double)t);
+            x->kernel[i][j] -=
+                (x->kernel_gradient[i][j] / (double)t) * LEARN_RATE;
         }
     }
-    x->bias_gradient /= t;
-}
-
-void conv_layer_descend(conv_layer *const x)
-{
-    assert(x->kernel_gradient);
-
-    for (size_t i = 0; i < x->k; i++)
-    {
-        for (size_t j = 0; j < x->k; j++)
-        {
-            x->kernel[i][j] -= x->kernel_gradient[i][j] * LEARN_RATE;
-        }
-    }
-    x->bias -= x->bias_gradient * LEARN_RATE;
+    x->bias -= (x->bias_gradient / (double)t) * LEARN_RATE;
 
 #ifdef DEBUG_MODE
 
@@ -498,7 +487,7 @@ void fc_layer_backprop(
 #endif
 }
 
-void fc_layer_avg_gradient(fc_layer const *const x, size_t t)
+void fc_layer_descend(fc_layer *const x, size_t t)
 {
     assert(x->weight_gradient && x->bias_gradient);
 
@@ -506,23 +495,12 @@ void fc_layer_avg_gradient(fc_layer const *const x, size_t t)
     {
         for (size_t j = 0; j < x->m; j++)
         {
-            x->weight_gradient[i][j] /= t;
+            x->weight[i][j] *=
+                (1.0 - (LEARN_RATE * REGULARIZATION_PARAM) / (double)t);
+            x->weight[i][j] -=
+                (x->weight_gradient[i][j] / (double)t) * LEARN_RATE;
         }
-        x->bias_gradient[i] /= t;
-    }
-}
-
-void fc_layer_descend(fc_layer *const x)
-{
-    assert(x->weight_gradient && x->bias_gradient);
-
-    for (size_t i = 0; i < x->n; i++)
-    {
-        for (size_t j = 0; j < x->m; j++)
-        {
-            x->weight[i][j] -= x->weight_gradient[i][j] * LEARN_RATE;
-        }
-        x->bias[i] -= x->bias_gradient[i] * LEARN_RATE;
+        x->bias[i] -= (x->bias_gradient[i] / (double)t) * LEARN_RATE;
     }
 
 #ifdef DEBUG_MODE

@@ -15,6 +15,7 @@
 #define PARAM_MAX 1.0
 
 #define LEARN_RATE 0.1
+#define REGULARIZATION_PARAM 1.0
 
 #define BATCH_SIZE 125 // The batch size per thread.
 #define NORMALIZATION_BATCH_SIZE 1000

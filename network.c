@@ -214,7 +214,7 @@ void network_reset_gradient(network const *const net)
     }
 }
 
-void network_avg_gradient(network const *const net, size_t t)
+void network_descend(network const *const net, size_t t)
 {
     for (size_t i = 0; i < net->l; i++)
     {
@@ -222,32 +222,11 @@ void network_avg_gradient(network const *const net, size_t t)
         switch (x->conv.ltype)
         {
         case LTYPE_CONV:
-            conv_layer_avg_gradient(&x->conv, t);
+            conv_layer_descend(&x->conv, t);
             break;
 
         case LTYPE_FC:
-            fc_layer_avg_gradient(&x->fc, t);
-            break;
-
-        default:
-            break;
-        }
-    }
-}
-
-void network_descend(network const *const net)
-{
-    for (size_t i = 0; i < net->l; i++)
-    {
-        layer *x = net->layers + i;
-        switch (x->conv.ltype)
-        {
-        case LTYPE_CONV:
-            conv_layer_descend(&x->conv);
-            break;
-
-        case LTYPE_FC:
-            fc_layer_descend(&x->fc);
+            fc_layer_descend(&x->fc, t);
             break;
 
         default:
@@ -678,8 +657,7 @@ void network_train(
             }
 
             sum_replica_gradients(net, num_threads, replicas);
-            network_avg_gradient(net, min(BATCH_SIZE * num_threads, t - i));
-            network_descend(net);
+            network_descend(net, min(BATCH_SIZE * num_threads, t - i));
             update_replicas(net, num_threads, replicas);
         }
 
