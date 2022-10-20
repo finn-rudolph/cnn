@@ -15,4 +15,10 @@ void convolve_pad(
     double *const *const out, double *const *const kernel,
     bool additive);
 
+// Assumes the input, output and kernel matrices are extended with zeros to the
+// next power of 2, and the data starts at index 0 in both dimensions.
+void convolve_fft(
+    size_t n, double *const *const in, double *const *const out,
+    double *const *const kernel);
+
 #endif

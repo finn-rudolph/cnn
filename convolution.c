@@ -206,7 +206,27 @@ complex double **ifft_2d(size_t n, size_t m, complex double *const *const matrix
 }
 
 void convolve_fft(
-    size_t n, size_t k, double *const *const in,
-    double *const *const out, double *const *const kernel)
+    size_t n, double *const *const in, double *const *const out,
+    double *const *const kernel)
 {
+    complex double **in_dft = fft_2d(n, n, in),
+                   **kernel_dft = fft_2d(n, n, kernel);
+
+    for (size_t i = 0; i < n; i++)
+    {
+        for (size_t j = 0; j < n; j++)
+        {
+            in_dft[i][j] *= kernel_dft[i][j];
+        }
+    }
+
+    complex double **res = ifft_2d(n, n, in_dft);
+
+    for (size_t i = 0; i < n; i++)
+    {
+        for (size_t j = 0; j < n; j++)
+        {
+            out[i][j] = creal(res[i][j]);
+        }
+    }
 }
