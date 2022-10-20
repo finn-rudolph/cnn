@@ -6,6 +6,7 @@
 #include <math.h>
 #include <memory.h>
 #include <stdio.h>
+#include <complex.h>
 
 #define square(x) ((x) * (x))
 #define min(x, y) (((x) < (y)) ? (x) : (y))
@@ -18,21 +19,28 @@ static inline double rand_double(double a, double b)
 
 // Swapping functions.
 
-static inline void doublep_swap(double **x, double **y)
+static inline void swap_cdouble(complex double *x, complex double *y)
+{
+    complex double z = *x;
+    *x = *y;
+    *y = z;
+}
+
+static inline void swap_doublep(double **x, double **y)
 {
     double *z = *x;
     *x = *y;
     *y = z;
 }
 
-static inline void doublepp_swap(double ***x, double ***y)
+static inline void swap_doublepp(double ***x, double ***y)
 {
     double **z = *x;
     *x = *y;
     *y = z;
 }
 
-static inline void uint8_swap(uint8_t *x, uint8_t *y)
+static inline void swap_uint8(uint8_t *x, uint8_t *y)
 {
     uint8_t z = *x;
     *x = *y;
@@ -41,20 +49,22 @@ static inline void uint8_swap(uint8_t *x, uint8_t *y)
 
 #define swap(x, y)                    \
     _Generic(x,                       \
-             double **                \
-             : doublep_swap,          \
+             complex double *         \
+             : swap_cdouble,          \
+               double **              \
+             : swap_doublep,          \
                double const **        \
-             : doublep_swap,          \
+             : swap_doublep,          \
                double ***             \
-             : doublepp_swap,         \
+             : swap_doublepp,         \
                double const ***       \
-             : doublepp_swap,         \
+             : swap_doublepp,         \
                double const *const ** \
-             : doublepp_swap,         \
+             : swap_doublepp,         \
                double *const **       \
-             : doublepp_swap,         \
+             : swap_doublepp,         \
                uint8_t *              \
-             : uint8_swap)(x, y)
+             : swap_uint8)(x, y)
 
 // Matrix utility functions.
 
@@ -68,7 +78,7 @@ static inline double **matrix_alloc(size_t n, size_t m)
     return matrix;
 }
 
-static inline void matrix_free(size_t n, double **matrix)
+static inline void matrix_free_double(size_t n, double **matrix)
 {
     for (size_t i = 0; i < n; i++)
     {
@@ -76,6 +86,22 @@ static inline void matrix_free(size_t n, double **matrix)
     }
     free(matrix);
 }
+
+static inline void matrix_free_cdouble(size_t n, complex double **matrix)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        free(matrix[i]);
+    }
+    free(matrix);
+}
+
+#define matrix_free(n, matrix)     \
+    _Generic(matrix,               \
+             double **             \
+             : matrix_free_double, \
+               complex double **   \
+             : matrix_free_cdouble)(n, matrix)
 
 static inline void matrix_copy(
     size_t n, size_t m, double *const *const matrix,

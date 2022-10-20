@@ -53,29 +53,37 @@ void convolve_pad(
     }
 }
 
-void bit_reverse(
-    size_t n, size_t lgn, double *const vec, complex double *const out)
+void bit_reverse(size_t n, size_t lgn, complex double *const vec)
 {
+    bool swapped[n];
+    memset(swapped, 0, n * sizeof(bool));
+
     for (size_t i = 0; i < n; i++)
     {
-        size_t rev_i = 0;
-        for (size_t j = 0; j < lgn; j++)
+        if (!swapped[i])
         {
-            rev_i |= (i & (1 << j) ? 1 : 0) << (lgn - j - 1);
+            size_t rev_i = 0;
+            for (size_t j = 0; j < lgn; j++)
+            {
+                rev_i |= (i & (1 << j) ? 1 : 0) << (lgn - j - 1);
+            }
+
+            swap(vec + i, vec + rev_i);
+            swapped[i] = 1;
+            swapped[rev_i] = 1;
         }
-        out[rev_i] = vec[i];
     }
 }
 
-// Returns the Discrete Fourier Transform of vec, where n must be a power of 2.
-complex double *fft(size_t n, double *const vec)
+// Computes the Discrete Fourier Transform of vec in place. n must be a power
+// of 2.
+void fft(size_t n, complex double *const vec)
 {
     size_t lgn = 0;
     while (1 << lgn < n)
         lgn++;
 
-    complex double *res = malloc(n * sizeof(complex double));
-    bit_reverse(n, lgn, vec, res);
+    bit_reverse(n, lgn, vec);
 
     for (size_t s = 1; s <= lgn; s++)
     {
@@ -87,13 +95,48 @@ complex double *fft(size_t n, double *const vec)
             complex double omega = 1.0;
             for (size_t j = i; j < i + l / 2; j++)
             {
-                complex double u = res[j], v = omega * res[j + l / 2];
-                res[j] = u + v;
-                res[j + l / 2] = u - v;
+                complex double u = vec[j], v = omega * vec[j + l / 2];
+                vec[j] = u + v;
+                vec[j + l / 2] = u - v;
                 omega *= omega_m;
             }
         }
     }
+}
 
+// The two-dimensional DFT, both n and m must be powers of 2.
+complex double **fft_2d(size_t n, size_t m, double *const *const matrix)
+{
+    complex double **transpose = malloc(m * sizeof(complex double *));
+
+    for (size_t i = 0; i < m; i++)
+    {
+        transpose[i] = malloc(n * sizeof(complex double));
+        for (size_t j = 0; j < n; j++)
+        {
+            transpose[i][j] = matrix[j][i];
+        }
+        fft(n, transpose[i]);
+    }
+
+    complex double **res = malloc(n * sizeof(complex double *));
+
+    for (size_t i = 0; i < n; i++)
+    {
+        res[i] = malloc(m * sizeof(complex double));
+        for (size_t j = 0; j < m; j++)
+        {
+            res[i][j] = transpose[j][i];
+        }
+        fft(m, res[i]);
+    }
+
+    matrix_free(m, transpose);
     return res;
+}
+
+void convolve_fft(
+    size_t n, size_t k, double *const *const in,
+    double *const *const out, double *const *const kernel)
+{
 }
