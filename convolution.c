@@ -1,5 +1,6 @@
 #include <complex.h>
 #include <math.h>
+#include <assert.h>
 
 #include "convolution.h"
 #include "util.h"
@@ -83,24 +84,60 @@ void fft(size_t n, complex double *const vec)
     while (1 << lgn < n)
         lgn++;
 
+    assert(n == 1 << lgn);
+
     bit_reverse(n, lgn, vec);
 
     for (size_t s = 1; s <= lgn; s++)
     {
-        size_t l = 1 << s;
-        complex double omega_m = exp(2.0 * M_PI * I / (complex double)l);
+        size_t m = 1 << s;
+        complex double omega_m = exp(2.0 * M_PI * I / (complex double)m);
 
         for (size_t i = 0; i < n; i += s)
         {
             complex double omega = 1.0;
-            for (size_t j = i; j < i + l / 2; j++)
+            for (size_t j = i; j < i + m / 2; j++)
             {
-                complex double u = vec[j], v = omega * vec[j + l / 2];
+                complex double u = vec[j], v = omega * vec[j + m / 2];
                 vec[j] = u + v;
-                vec[j + l / 2] = u - v;
+                vec[j + m / 2] = u - v;
                 omega *= omega_m;
             }
         }
+    }
+}
+
+void ifft(size_t n, complex double *const vec)
+{
+    size_t lgn = 0;
+    while (1 << lgn < n)
+        lgn++;
+
+    assert(n == 1 << lgn);
+
+    bit_reverse(n, lgn, vec);
+
+    for (size_t s = 1; s <= lgn; s++)
+    {
+        size_t m = 1 << s;
+        complex double omega_m = exp(-2.0 * M_PI * I / (complex double)m);
+
+        for (size_t i = 0; i < n; i += s)
+        {
+            complex double omega = 1.0;
+            for (size_t j = i; j < i + m / 2; j++)
+            {
+                complex double u = vec[j], v = omega * vec[j + m / 2];
+                vec[j] = u + v;
+                vec[j + m / 2] = u - v;
+                omega *= omega_m;
+            }
+        }
+    }
+
+    for (size_t i = 0; i < n; i++)
+    {
+        vec[i] /= (complex double)n;
     }
 }
 
@@ -129,6 +166,39 @@ complex double **fft_2d(size_t n, size_t m, double *const *const matrix)
             res[i][j] = transpose[j][i];
         }
         fft(m, res[i]);
+    }
+
+    matrix_free(m, transpose);
+    return res;
+}
+
+complex double **ifft_2d(size_t n, size_t m, complex double *const *const matrix)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        ifft(m, matrix[i]);
+    }
+
+    complex double **transpose = malloc(m * sizeof(complex double *));
+
+    for (size_t i = 0; i < m; i++)
+    {
+        for (size_t j = 0; i < n; i++)
+        {
+            transpose[i][j] = matrix[j][i];
+        }
+        ifft(n, transpose[i]);
+    }
+
+    complex double **res = malloc(n * sizeof(complex double *));
+
+    for (size_t i = 0; i < n; i++)
+    {
+        res[i] = malloc(m * sizeof(complex double));
+        for (size_t j = 0; j < m; j++)
+        {
+            res[i][j] = transpose[j][i];
+        }
     }
 
     matrix_free(m, transpose);
