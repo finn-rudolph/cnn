@@ -6,41 +6,6 @@
 #include "layer.h"
 #include "util.h"
 
-// Assumes the output of the former layer is layed out such that a margin of
-// half the kernel size just fits in.
-void pad_avg(size_t n, size_t k, double *const *const matrix)
-{
-    assert(k < n);
-    size_t const s = k / 2;
-
-    for (size_t d = 0; d < s; d++)
-    {
-        // Extend sides.
-        for (size_t j = s - d; j < n + s + d; j++)
-        {
-            matrix[s - d - 1][j] = matrix[s - d][j];
-            matrix[n + s + d][j] = matrix[n + s + d - 1][j];
-        }
-
-        for (size_t i = s - d; i < n + s + d; i++)
-        {
-            matrix[i][s - d - 1] = matrix[i][s - d];
-            matrix[i][n + s + d] = matrix[i][n + s + d - 1];
-        }
-
-        // Fill corners.
-        matrix[s - d - 1][s - d - 1] =
-            (matrix[s - d - 1][s - d] + matrix[s - d][s - d - 1]) / 2.0;
-        matrix[s - d - 1][n + s + d] =
-            (matrix[s - d - 1][n + s + d - 1] + matrix[s - d][n + s + d]) / 2.0;
-        matrix[n + s + d][s - d - 1] =
-            (matrix[n + s + d][s - d] + matrix[n + s + d - 1][s - d - 1]) / 2.0;
-        matrix[n + s + d][n + s + d] =
-            (matrix[n + s + d][n + s + d - 1] + matrix[n + s + d - 1][n + s + d]) /
-            2.0;
-    }
-}
-
 void pad_zero(size_t n, size_t k, double *const *const matrix)
 {
     assert(k < n);
@@ -115,7 +80,7 @@ void input_layer_pass(
             out[i + x->padding][j + x->padding] = image[i * x->n + j];
         }
     }
-    pad(x->n, x->padding * 2 + 1, out);
+    pad_zero(x->n, x->padding * 2 + 1, out);
 
     if (store_intermed)
     {
@@ -232,7 +197,7 @@ void conv_layer_pass(
         (*x->f)(x->n, out[i] + s);
     }
 
-    pad(x->n, x->k, out);
+    pad_zero(x->n, x->k, out);
 
     if (store_intermed)
     {
@@ -276,7 +241,7 @@ void conv_layer_backprop(
     activation_fn prev_fd, double *const *const delta,
     double *const *const ndelta)
 {
-    pad(x->n, x->k, delta);
+    pad_zero(x->n, x->k, delta);
 
     // The kernel rotated by 180° convolved with the current layer's deltas are
     // the previous layer's deltas.

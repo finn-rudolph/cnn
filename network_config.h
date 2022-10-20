@@ -9,8 +9,6 @@
 #define OUT_ACTIVATION &softmax
 #define OUT_ACTIVATION_D 0
 
-#define pad(n, k, out) pad_zero(n, k, out)
-
 #define PARAM_MIN -1.0 // Only for initializing the network.
 #define PARAM_MAX 1.0
 
