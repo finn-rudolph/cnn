@@ -22,7 +22,7 @@ void convolve_offset(
     bool additive);
 
 void convolve_fft(
-    size_t n, double *const *const in, double *const *const out,
+    size_t n, size_t k, double *const *const in, double *const *const out,
     double *const *const kernel);
 
 #endif
