@@ -14,40 +14,47 @@ void convolve(
     double *const *const out, double *const *const kernel,
     bool additive)
 {
-    for (size_t i = 0; i < n - k + 1; i++)
+    assert(k & 1);
+    ptrdiff_t s = k / 2;
+
+    // i, j: output coordinates; a, b: current coordinates in the input
+    for (ptrdiff_t i = 0; i < n; i++)
     {
-        for (size_t j = 0; j < n - k + 1; j++)
+        for (ptrdiff_t j = 0; j < n; j++)
         {
             if (!additive)
                 out[i][j] = 0.0;
-            for (size_t a = 0; a < k; a++)
+
+            for (ptrdiff_t a = max(0, i - s); a < i + s + 1; a++)
             {
-                for (size_t b = 0; b < k; b++)
+                for (ptrdiff_t b = max(0, j - s); b < j + s + 1; b++)
                 {
-                    out[i][j] += in[i + a][j + b] * kernel[a][b];
+                    out[i][j] += in[a][b] * kernel[a - i + s][b - j + s];
                 }
             }
         }
     }
 }
 
-void convolve_pad(
+void convolve_offset(
     size_t n, size_t k, double *const *const in,
-    double *const *const out, double *const *const kernel,
+    double *const *const out, double *const *const kernel, size_t margin,
     bool additive)
 {
-    size_t const s = k / 2;
-    for (size_t i = s; i < n - s; i++)
+    ptrdiff_t s = (k - 1) / 2;
+
+    for (ptrdiff_t i = 0; i < 2 * margin + 1; i++)
     {
-        for (size_t j = s; j < n - s; j++)
+        for (ptrdiff_t j = 0; j < 2 * margin + 1; j++)
         {
             if (!additive)
                 out[i][j] = 0.0;
-            for (size_t a = 0; a < k; a++)
+
+            for (ptrdiff_t a = max(0, i - s); a < i + k - s && a < n; a++)
             {
-                for (size_t b = 0; b < k; b++)
+                for (ptrdiff_t b = max(0, j - s); b < j + k - s && b < n; b++)
                 {
-                    out[i][j] += in[i - s + a][j - s + b] * kernel[a][b];
+                    out[i][j] += in[a][b] * kernel[a - i + s][b - j + s];
                 }
             }
         }

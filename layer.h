@@ -122,11 +122,11 @@ typedef struct flat_layer flat_layer;
 struct flat_layer
 {
     uint8_t ltype;
-    size_t n, padding;
+    size_t n;
     double *in, *out; // the previous layer's input / output, but flattened
 };
 
-void flat_layer_init(flat_layer *const x, size_t n, size_t padding);
+void flat_layer_init(flat_layer *const x, size_t n);
 
 void flat_layer_init_backprop(flat_layer *const x);
 

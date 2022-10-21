@@ -6,50 +6,30 @@
 #include "layer.h"
 #include "util.h"
 
-void pad_zero(size_t n, size_t k, double *const *const matrix)
+// Adds padding in the positive direction of each dimension.
+void pad_zero(size_t n, size_t padding, double *const *const matrix)
 {
-    assert(k < n);
-    size_t const s = k / 2;
+    assert(padding < n);
 
-    for (size_t d = 0; d < s; d++)
+    for (size_t i = 0; i < n + padding; i++)
     {
-        for (size_t j = s - d; j < n + s + d; j++)
+        for (size_t j = n; j < n + padding; j++)
         {
-            matrix[s - d - 1][j] = 0.0;
-            matrix[n + s + d][j] = 0.0;
+            matrix[i][j] = 0.0;
         }
-
-        for (size_t i = s - d; i < n + s + d; i++)
-        {
-            matrix[i][s - d - 1] = 0.0;
-            matrix[i][n + s + d] = 0.0;
-        }
-
-        matrix[s - d - 1][s - d - 1] = 0.0;
-        matrix[s - d - 1][n + s + d] = 0.0;
-        matrix[n + s + d][s - d - 1] = 0.0;
-        matrix[n + s + d][n + s + d] = 0.0;
-    }
-}
-
-// Neither creates a new matrix nor modifies the given. Only an array of
-// pointers indented by the size of the padding at each row is returned.
-double **remove_padding(size_t n, size_t padding, double *const *const matrix)
-{
-    double **nmatrix = malloc(n * sizeof(double *));
-
-    for (size_t i = 0; i < n; i++)
-    {
-        nmatrix[i] = matrix[i + padding] + padding;
     }
 
-    return nmatrix;
+    for (size_t i = n; i < n + padding; i++)
+    {
+        for (size_t j = 0; j < n; j++)
+        {
+            matrix[i][j] = 0.0;
+        }
+    }
 }
 
 void input_layer_init(input_layer *const x, size_t n, size_t padding)
 {
-    assert(padding < n / 2);
-
     x->ltype = LTYPE_INPUT;
     x->n = n;
     x->padding = padding;
@@ -58,14 +38,14 @@ void input_layer_init(input_layer *const x, size_t n, size_t padding)
 
 void input_layer_init_backprop(input_layer *const x)
 {
-    x->out = matrix_alloc(x->n + 2 * x->padding, x->n + 2 * x->padding);
+    x->out = matrix_alloc(x->n, x->n);
 }
 
 void input_layer_free(input_layer *const x)
 {
     if (x->out)
     {
-        matrix_free(x->n + 2 * x->padding, x->out);
+        matrix_free(x->n, x->out);
     }
 }
 
@@ -77,20 +57,20 @@ void input_layer_pass(
     {
         for (size_t j = 0; j < x->n; j++)
         {
-            out[i + x->padding][j + x->padding] = image[i * x->n + j];
+            out[i][j] = image[i * x->n + j];
         }
     }
-    pad_zero(x->n, x->padding * 2 + 1, out);
+    pad_zero(x->n, x->padding, out);
 
     if (store_intermed)
     {
-        matrix_copy(x->n + 2 * x->padding, x->n + 2 * x->padding, out, x->out);
+        matrix_copy(x->n, x->n, out, x->out);
     }
 
 #ifdef DEBUG_MODE
 
     printf("Input image:\n");
-    matrix_print(x->n + 2 * x->padding, x->n + 2 * x->padding, out, stdout);
+    matrix_print(x->n, x->n, out, stdout);
 
 #endif
 }
@@ -124,8 +104,7 @@ void conv_layer_init(conv_layer *const x, size_t n, size_t k)
 void conv_layer_init_backprop(conv_layer *const x)
 {
     x->in = matrix_alloc(x->n, x->n);
-    // Padding size is added, as padding is necessary to compute the gradient.
-    x->out = matrix_alloc(x->n + x->k - 1, x->n + x->k - 1);
+    x->out = matrix_alloc(x->n, x->n);
     x->kernel_gradient = matrix_alloc(x->k, x->k);
     x->bias_gradient = 0.0;
 }
@@ -154,7 +133,7 @@ void conv_layer_free(conv_layer *const x)
     }
     if (x->out)
     {
-        matrix_free(x->n + x->k - 1, x->out);
+        matrix_free(x->n, x->out);
     }
     if (x->kernel_gradient)
     {
@@ -166,12 +145,11 @@ void conv_layer_pass(
     conv_layer const *const x, double *const *const in,
     double *const *const out, bool store_intermed)
 {
-    convolve_pad(x->n + x->k - 1, x->k, in, out, x->kernel, 0);
+    convolve(x->n, x->k, in, out, x->kernel, 0);
 
-    size_t const s = x->k / 2;
-    for (size_t i = s; i < x->n + s; i++)
+    for (size_t i = 0; i < x->n; i++)
     {
-        for (size_t j = s; j < x->n + s; j++)
+        for (size_t j = 0; j < x->n; j++)
         {
             out[i][j] += x->bias;
         }
@@ -179,10 +157,7 @@ void conv_layer_pass(
 
     if (store_intermed)
     {
-        for (size_t i = 0; i < x->n; i++)
-        {
-            memcpy(x->in[i], out[i + s] + s, x->n * sizeof(double));
-        }
+        matrix_copy(x->n, x->n, out, x->in);
     }
 
 #ifdef DEBUG_MODE
@@ -192,22 +167,22 @@ void conv_layer_pass(
 
 #endif
 
-    for (size_t i = s; i < x->n + s; i++)
+    for (size_t i = 0; i < x->n; i++)
     {
-        (*x->f)(x->n, out[i] + s);
+        (*x->f)(x->n, out[i]);
     }
 
-    pad_zero(x->n, x->k, out);
+    pad_zero(x->n, x->k - 1, out);
 
     if (store_intermed)
     {
-        matrix_copy(x->n + x->k - 1, x->n + x->k - 1, out, x->out);
+        matrix_copy(x->n, x->n, out, x->out);
     }
 
 #ifdef DEBUG_MODE
 
     printf("Output values:\n");
-    matrix_print(x->n + x->k - 1, x->n + x->k - 1, out, stdout);
+    matrix_print(x->n, x->n, out, stdout);
 
 #endif
 }
@@ -221,17 +196,14 @@ void conv_layer_update_gradient(
     // Convolve the current layer's deltas with the previous layer's outputs to
     // get the gradient for the kernel.
 
-    double **delta_kernel = remove_padding(x->n, x->k / 2, delta);
-
-    convolve(
-        x->n + x->k - 1, x->n, prev_out, x->kernel_gradient, delta_kernel, 1);
-    free(delta_kernel);
+    convolve_offset(
+        x->n, x->n, prev_out, x->kernel_gradient, delta, x->k / 2, 1);
 
     for (size_t i = 0; i < x->n; i++)
     {
         for (size_t j = 0; j < x->n; j++)
         {
-            x->bias_gradient += delta[i + x->k / 2][j + x->k / 2];
+            x->bias_gradient += delta[i][j];
         }
     }
 }
@@ -247,22 +219,21 @@ void conv_layer_backprop(
     // the previous layer's deltas.
 
     double **flipped_kernel = flip_kernel(x->k, x->kernel);
-    convolve_pad(x->n + x->k - 1, x->k, delta, ndelta, flipped_kernel, 0);
+    convolve(x->n, x->k, delta, ndelta, flipped_kernel, 0);
+    matrix_free(x->k, flipped_kernel);
 
     for (size_t i = 0; i < x->n; i++)
     {
         for (size_t j = 0; j < x->n; j++)
         {
-            ndelta[i + x->k / 2][j + x->k / 2] *= (*prev_fd)(prev_in[i][j]);
+            ndelta[i][j] *= (*prev_fd)(prev_in[i][j]);
         }
     }
-
-    matrix_free(x->k, flipped_kernel);
 
 #ifdef DEBUG_MODE
 
     printf("Delta:\n");
-    matrix_print(x->n + x->k - 1, x->n + x->k - 1, delta, stdout);
+    matrix_print(x->n, x->n, delta, stdout);
 
 #endif
 }
@@ -505,11 +476,10 @@ void fc_layer_print(fc_layer const *const x, FILE *const stream)
     fputc('\n', stream);
 }
 
-void flat_layer_init(flat_layer *const x, size_t n, size_t padding)
+void flat_layer_init(flat_layer *const x, size_t n)
 {
     x->ltype = LTYPE_FLAT;
     x->n = n;
-    x->padding = padding;
     x->in = 0;
     x->out = 0;
 }
@@ -539,7 +509,7 @@ void flat_layer_pass(
     {
         for (size_t j = 0; j < x->n; j++)
         {
-            out[i * x->n + j] = in[i + x->padding][j + x->padding];
+            out[i * x->n + j] = in[i][j];
         }
     }
 }
@@ -551,18 +521,18 @@ void flat_layer_backprop(
     {
         for (size_t j = 0; j < x->n; j++)
         {
-            ndelta[i + x->padding][j + x->padding] = delta[i * x->n + j];
+            ndelta[i][j] = delta[i * x->n + j];
         }
     }
 }
 
 void flat_layer_read(flat_layer *const x, FILE *const stream)
 {
-    fscanf(stream, "%zu %zu", &x->n, &x->padding);
-    flat_layer_init(x, x->n, x->padding);
+    fscanf(stream, "%zu", &x->n);
+    flat_layer_init(x, x->n);
 }
 
 void flat_layer_print(flat_layer const *const x, FILE *const stream)
 {
-    fprintf(stream, "%zu %zu\n", x->n, x->padding);
+    fprintf(stream, "%zu\n\n", x->n);
 }

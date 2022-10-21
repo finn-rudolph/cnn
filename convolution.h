@@ -4,19 +4,25 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+// All convolution functions assume, that the data starts at index 0 in both
+// dimensions and is layed out continuously.
+
+// Ouputs a matrix of the same size as the input matrix by first centering the
+// kernel in the top left corner and cutting off when necessary. k must be odd.
 void convolve(
     size_t n, size_t k, double *const *const in,
     double *const *const out, double *const *const kernel,
     bool additive);
 
-// Lays out the output with a padding of k / 2 in all directions.
-void convolve_pad(
+// Performs a convolution in the usual sense. The margin is used as a maximum
+// margin around the input image, such that the ouput is of size 2 * margin + 1.
+void convolve_offset(
     size_t n, size_t k, double *const *const in,
-    double *const *const out, double *const *const kernel,
+    double *const *const out, double *const *const kernel, size_t margin,
     bool additive);
 
 // Assumes the input, output and kernel matrices are extended with zeros to the
-// next power of 2, and the data starts at index 0 in both dimensions.
+// next power of 2.
 void convolve_fft(
     size_t n, double *const *const in, double *const *const out,
     double *const *const kernel);

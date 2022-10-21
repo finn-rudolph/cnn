@@ -18,7 +18,7 @@ network network_init(
     net.l = num_conv + num_fc + 2;
     net.layers = malloc(net.l * sizeof(layer));
 
-    input_layer_init(&net.layers[0].input, 28, kernel_size / 2);
+    input_layer_init(&net.layers[0].input, 28, kernel_size - 1);
 
     srand(time(0));
 
@@ -38,8 +38,7 @@ network network_init(
     }
 
     flat_layer_init(
-        &net.layers[num_conv + 1].flat, net.layers[num_conv].conv.n,
-        kernel_size / 2);
+        &net.layers[num_conv + 1].flat, net.layers[num_conv].conv.n);
 
     for (size_t i = num_conv + 2; i < net.l; i++)
     {
@@ -119,7 +118,7 @@ void network_free(network *const net)
 }
 
 // Feeds the specified image through the network. u, v, p and q must be user
-// provided buffers large endough to store intermediate results of any layer.
+// provided buffers large enough to store intermediate results of any layer.
 double *network_pass_one(
     network const *const net, double *const image, double **u, double **v,
     double *p, double *q, bool store_intermed)
@@ -424,13 +423,13 @@ void free_replicas(size_t n, network *const replicas)
             {
             case LTYPE_INPUT:
             {
-                matrix_free(x->input.n + 2 * x->input.padding, x->input.out);
+                matrix_free(x->input.n, x->input.out);
                 break;
             }
             case LTYPE_CONV:
             {
                 matrix_free(x->conv.n, x->conv.in);
-                matrix_free(x->conv.n + x->conv.k - 1, x->conv.out);
+                matrix_free(x->conv.n, x->conv.out);
                 matrix_free(x->conv.k, x->conv.kernel_gradient);
                 break;
             }
@@ -507,6 +506,7 @@ void update_replicas(
             {
             case LTYPE_CONV:
                 x->conv.bias = y->conv.bias;
+                break;
 
             default:
                 break;
