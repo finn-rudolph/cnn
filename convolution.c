@@ -25,9 +25,9 @@ void convolve(
             if (!additive)
                 out[i][j] = 0.0;
 
-            for (ptrdiff_t a = max(0, i - s); a < i + s + 1; a++)
+            for (ptrdiff_t a = max(0, i - s); a < i + s + 1 && a < n; a++)
             {
-                for (ptrdiff_t b = max(0, j - s); b < j + s + 1; b++)
+                for (ptrdiff_t b = max(0, j - s); b < j + s + 1 && b < n; b++)
                 {
                     out[i][j] += in[a][b] * kernel[a - i + s][b - j + s];
                 }

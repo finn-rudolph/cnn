@@ -18,7 +18,7 @@ network network_init(
     net.l = num_conv + num_fc + 2;
     net.layers = malloc(net.l * sizeof(layer));
 
-    input_layer_init(&net.layers[0].input, 28, kernel_size - 1);
+    input_layer_init(&net.layers[0].input, 28);
 
     srand(time(0));
 
@@ -564,7 +564,7 @@ double **network_pass_forward(
     size_t const num_threads = get_nprocs();
     printf("Using %zu threads.\n", num_threads);
 
-    size_t const grid_size = 28 + 2 * net->layers[0].input.padding;
+    size_t const grid_size = 28;
 
     double ***u = malloc(num_threads * sizeof(double **)),
            ***v = malloc(num_threads * sizeof(double **)),
@@ -633,7 +633,7 @@ void network_train(
 
     network *replicas = replicate_net(net, num_threads);
 
-    size_t const grid_size = 28 + 2 * net->layers[0].input.padding;
+    size_t const grid_size = 28;
 
     double ***u = malloc(num_threads * sizeof(double **)),
            ***v = malloc(num_threads * sizeof(double **)),

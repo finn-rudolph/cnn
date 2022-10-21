@@ -22,11 +22,11 @@ typedef struct input_layer input_layer;
 struct input_layer
 {
     uint8_t ltype;
-    size_t n, padding;
+    size_t n;
     double **out;
 };
 
-void input_layer_init(input_layer *const x, size_t n, size_t padding);
+void input_layer_init(input_layer *const x, size_t n);
 
 void input_layer_init_backprop(input_layer *const x);
 

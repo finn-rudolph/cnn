@@ -6,33 +6,10 @@
 #include "layer.h"
 #include "util.h"
 
-// Adds padding in the positive direction of each dimension.
-void pad_zero(size_t n, size_t padding, double *const *const matrix)
-{
-    assert(padding < n);
-
-    for (size_t i = 0; i < n + padding; i++)
-    {
-        for (size_t j = n; j < n + padding; j++)
-        {
-            matrix[i][j] = 0.0;
-        }
-    }
-
-    for (size_t i = n; i < n + padding; i++)
-    {
-        for (size_t j = 0; j < n; j++)
-        {
-            matrix[i][j] = 0.0;
-        }
-    }
-}
-
-void input_layer_init(input_layer *const x, size_t n, size_t padding)
+void input_layer_init(input_layer *const x, size_t n)
 {
     x->ltype = LTYPE_INPUT;
     x->n = n;
-    x->padding = padding;
     x->out = 0;
 }
 
@@ -60,7 +37,6 @@ void input_layer_pass(
             out[i][j] = image[i * x->n + j];
         }
     }
-    pad_zero(x->n, x->padding, out);
 
     if (store_intermed)
     {
@@ -77,13 +53,13 @@ void input_layer_pass(
 
 void input_layer_read(input_layer *const x, FILE *const stream)
 {
-    fscanf(stream, "%zu %zu", &x->n, &x->padding);
-    input_layer_init(x, x->n, x->padding);
+    fscanf(stream, "%zu", &x->n);
+    input_layer_init(x, x->n);
 }
 
 void input_layer_print(input_layer const *const x, FILE *const stream)
 {
-    fprintf(stream, "%zu %zu\n\n", x->n, x->padding);
+    fprintf(stream, "%zu\n\n", x->n);
 }
 
 void conv_layer_init(conv_layer *const x, size_t n, size_t k)
@@ -172,8 +148,6 @@ void conv_layer_pass(
         (*x->f)(x->n, out[i]);
     }
 
-    pad_zero(x->n, x->k - 1, out);
-
     if (store_intermed)
     {
         matrix_copy(x->n, x->n, out, x->out);
@@ -213,8 +187,6 @@ void conv_layer_backprop(
     activation_fn prev_fd, double *const *const delta,
     double *const *const ndelta)
 {
-    pad_zero(x->n, x->k, delta);
-
     // The kernel rotated by 180° convolved with the current layer's deltas are
     // the previous layer's deltas.
 
