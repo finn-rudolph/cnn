@@ -250,7 +250,7 @@ static inline void vrelu_d(size_t n, double *const x)
 
 static inline double relu_smooth(double x)
 {
-    return log(1.0 + exp(x));
+    return log1p(exp(x));
 }
 
 static inline double relu_smooth_d(double x)
