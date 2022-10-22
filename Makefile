@@ -1,9 +1,9 @@
 CC = clang
-CFLAGS = -Wall -g -O3 -lm
+CFLAGS = -Wall -g -O3
 BINS = main.o image_data.o layer.o network.o convolution.o
 
-all: $(BINS)
-	$(CC) $(CFLAGS) $(BINS) -o main
+main: $(BINS) main.o
+	$(CC) $(CFLAGS) $(BINS) -lm -o main
 
 %.o: %.c %.h
 	$(CC) $(CFLAGS) -c $^
