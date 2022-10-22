@@ -4,7 +4,7 @@ The network consists of several convolutional layers followed by fully connected
 
 ## Data representation
 
-An image is represented as an array of size 784. The input layer converts this to a 28 times 28 two-dimensional array. Data always starts at index 0 in both dimensions. As the fully connected layers use one dimension, a flattening layer in between is needed.
+An image is represented as an array of size 784. The input layer converts this to a 28 times 28 two-dimensional array. Data always starts at index 0 in both dimensions. As the fully connected layers use one dimension, a flattening layer between the convolutional and fully connected layers is needed.
 
 ## Control flow
 

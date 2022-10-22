@@ -123,11 +123,15 @@ void conv_layer_pass(
 {
 
 #ifdef CONV_FFT
+
     double **flipped_kernel = flip_kernel(x->k, x->kernel);
-    convolve_fft(x->n, x->k, in, out, flipped_kernel);
+    convolve_fft(x->n, x->k, in, out, flipped_kernel, 0);
     matrix_free(x->k, flipped_kernel);
+
 #else
+
     convolve(x->n, x->k, in, out, x->kernel, 0);
+
 #endif
 
     for (size_t i = 0; i < x->n; i++)
@@ -177,8 +181,19 @@ void conv_layer_update_gradient(
     // Convolve the current layer's deltas with the previous layer's outputs to
     // get the gradient for the kernel.
 
+#ifdef CONV_FFT
+
+    double **flipped_delta = flip_kernel(x->n, delta);
+    convolve_fft_offset(
+        x->n, x->n, prev_out, x->kernel_gradient, flipped_delta, x->k / 2, 1);
+    matrix_free(x->n, flipped_delta);
+
+#else
+
     convolve_offset(
         x->n, x->n, prev_out, x->kernel_gradient, delta, x->k / 2, 1);
+
+#endif
 
     for (size_t i = 0; i < x->n; i++)
     {
@@ -198,11 +213,15 @@ void conv_layer_backprop(
     // the previous layer's deltas.
 
 #ifdef CONV_FFT
-    convolve_fft(x->n, x->k, delta, ndelta, x->kernel);
+
+    convolve_fft(x->n, x->k, delta, ndelta, x->kernel, 0);
+
 #else
+
     double **flipped_kernel = flip_kernel(x->k, x->kernel);
     convolve(x->n, x->k, delta, ndelta, flipped_kernel, 0);
     matrix_free(x->k, flipped_kernel);
+
 #endif
 
     for (size_t i = 0; i < x->n; i++)

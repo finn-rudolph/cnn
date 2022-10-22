@@ -10,9 +10,8 @@
 #endif
 
 void convolve(
-    size_t n, size_t k, double *const *const in,
-    double *const *const out, double *const *const kernel,
-    bool additive)
+    size_t n, size_t k, double *const *const in, double *const *const out,
+    double *const *const kernel, bool const additive)
 {
     assert(k & 1);
     ptrdiff_t s = k / 2;
@@ -37,9 +36,8 @@ void convolve(
 }
 
 void convolve_offset(
-    size_t n, size_t k, double *const *const in,
-    double *const *const out, double *const *const kernel, size_t margin,
-    bool additive)
+    size_t n, size_t k, double *const *const in, double *const *const out,
+    double *const *const kernel, size_t margin, bool const additive)
 {
     ptrdiff_t s = (k - 1) / 2;
 
@@ -266,15 +264,13 @@ double **cyclic_sift(size_t k, size_t m, double *const *const kernel)
     return shifted;
 }
 
-void convolve_fft(
-    size_t n, size_t k, double *const *const in, double *const *const out,
+// Returns the convolution of in and kernel, padded to size m and in complex
+// numbers. This function's purpose is avoiding code duplication in convolve_fft
+// and convolve_fft_offset.
+complex double **get_convolution(
+    size_t n, size_t m, size_t k, double *const *const in,
     double *const *const kernel)
 {
-    size_t lgm = 0;
-    while (1 << lgm < n + k - 1)
-        lgm++;
-    size_t m = 1 << lgm;
-
     double **shifted_kernel = cyclic_sift(k, m, kernel);
 
     complex double **in_dft = fft_2d(n, m, in),
@@ -294,11 +290,54 @@ void convolve_fft(
     complex double **res = ifft_2d(m, in_dft);
     matrix_free(m, in_dft);
 
+    return res;
+}
+
+void convolve_fft(
+    size_t n, size_t k, double *const *const in, double *const *const out,
+    double *const *const kernel, bool const additive)
+{
+    size_t lgm = 0;
+    while (1 << lgm < n + k - 1)
+        lgm++;
+    size_t m = 1 << lgm;
+
+    complex double **res = get_convolution(n, m, k, in, kernel);
+
     for (size_t i = 0; i < n; i++)
     {
         for (size_t j = 0; j < n; j++)
         {
-            out[i][j] = creal(res[i][j]);
+            if (additive)
+                out[i][j] += creal(res[i][j]);
+            else
+                out[i][j] = creal(res[i][j]);
+        }
+    }
+
+    matrix_free(m, res);
+}
+
+void convolve_fft_offset(
+    size_t n, size_t k, double *const *const in, double *const *const out,
+    double *const *const kernel, size_t margin, bool const additive)
+{
+    size_t lgm = 0;
+    while (1 << lgm < n + k - 1)
+        lgm++;
+    size_t m = 1 << lgm;
+
+    complex double **res = get_convolution(n, m, k, in, kernel);
+    size_t const shift = (k - 1) / 2 - margin;
+
+    for (size_t i = 0; i < 2 * margin + 1; i++)
+    {
+        for (size_t j = 0; j < 2 * margin + 1; j++)
+        {
+            if (additive)
+                out[i][j] += creal(res[i + shift][j + shift]);
+            else
+                out[i][j] = creal(res[i + shift][j + shift]);
         }
     }
 
