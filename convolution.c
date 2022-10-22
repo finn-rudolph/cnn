@@ -292,6 +292,7 @@ void convolve_fft(
 
     matrix_free(m, kernel_dft);
     complex double **res = ifft_2d(m, in_dft);
+    matrix_free(m, in_dft);
 
     for (size_t i = 0; i < n; i++)
     {
@@ -300,4 +301,6 @@ void convolve_fft(
             out[i][j] = creal(res[i][j]);
         }
     }
+
+    matrix_free(m, res);
 }

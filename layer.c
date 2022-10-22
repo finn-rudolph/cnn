@@ -121,7 +121,14 @@ void conv_layer_pass(
     conv_layer const *const x, double *const *const in,
     double *const *const out, bool store_intermed)
 {
+
+#ifdef CONV_FFT
+    double **flipped_kernel = flip_kernel(x->k, x->kernel);
+    convolve_fft(x->n, x->k, in, out, flipped_kernel);
+    matrix_free(x->k, flipped_kernel);
+#else
     convolve(x->n, x->k, in, out, x->kernel, 0);
+#endif
 
     for (size_t i = 0; i < x->n; i++)
     {
@@ -190,9 +197,13 @@ void conv_layer_backprop(
     // The kernel rotated by 180° convolved with the current layer's deltas are
     // the previous layer's deltas.
 
+#ifdef CONV_FFT
+    convolve_fft(x->n, x->k, delta, ndelta, x->kernel);
+#else
     double **flipped_kernel = flip_kernel(x->k, x->kernel);
     convolve(x->n, x->k, delta, ndelta, flipped_kernel, 0);
     matrix_free(x->k, flipped_kernel);
+#endif
 
     for (size_t i = 0; i < x->n; i++)
     {
