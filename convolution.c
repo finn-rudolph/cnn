@@ -92,22 +92,23 @@ void fft(size_t n, complex double *const vec)
         lgn++;
 
     assert(n == 1 << lgn);
-
     bit_reverse(n, lgn, vec);
 
     for (size_t s = 1; s <= lgn; s++)
     {
-        size_t m = 1 << s;
-        complex double omega_m = exp(2.0 * M_PI * I / (complex double)m);
+        size_t const m = 1 << s;
+        complex double const omega_m = cexp((2.0 * M_PI * I) / (complex double)m);
 
-        for (size_t i = 0; i < n; i += s)
+        for (size_t i = 0; i < n; i += m)
         {
             complex double omega = 1.0;
-            for (size_t j = i; j < i + m / 2; j++)
+            for (size_t j = 0; j < m / 2; j++)
             {
-                complex double u = vec[j], v = omega * vec[j + m / 2];
-                vec[j] = u + v;
-                vec[j + m / 2] = u - v;
+                assert(i + j + m / 2 < n);
+
+                complex double u = vec[i + j], v = omega * vec[i + j + m / 2];
+                vec[i + j] = u + v;
+                vec[i + j + m / 2] = u - v;
                 omega *= omega_m;
             }
         }
@@ -121,22 +122,21 @@ void ifft(size_t n, complex double *const vec)
         lgn++;
 
     assert(n == 1 << lgn);
-
     bit_reverse(n, lgn, vec);
 
     for (size_t s = 1; s <= lgn; s++)
     {
-        size_t m = 1 << s;
-        complex double omega_m = exp(-2.0 * M_PI * I / (complex double)m);
+        size_t const m = 1 << s;
+        complex double const omega_m = cexp((-2.0 * M_PI * I) / (complex double)m);
 
-        for (size_t i = 0; i < n; i += s)
+        for (size_t i = 0; i < n; i += m)
         {
             complex double omega = 1.0;
-            for (size_t j = i; j < i + m / 2; j++)
+            for (size_t j = 0; j < m / 2; j++)
             {
-                complex double u = vec[j], v = omega * vec[j + m / 2];
-                vec[j] = u + v;
-                vec[j + m / 2] = u - v;
+                complex double u = vec[i + j], v = omega * vec[i + j + m / 2];
+                vec[i + j] = u + v;
+                vec[i + j + m / 2] = u - v;
                 omega *= omega_m;
             }
         }
@@ -188,16 +188,16 @@ complex double **fft_2d(size_t n, size_t m, double *const *const matrix)
 
 complex double **ifft_2d(size_t m, complex double *const *const matrix)
 {
-    for (size_t i = 0; i < m; i++)
-    {
-        ifft(m, matrix[i]);
-    }
-
     complex double **transpose = malloc(m * sizeof(complex double *));
 
     for (size_t i = 0; i < m; i++)
     {
-        for (size_t j = 0; i < m; i++)
+        transpose[i] = calloc(m, sizeof(complex double));
+    }
+
+    for (size_t i = 0; i < m; i++)
+    {
+        for (size_t j = 0; j < m; j++)
         {
             transpose[i][j] = matrix[j][i];
         }
@@ -213,6 +213,7 @@ complex double **ifft_2d(size_t m, complex double *const *const matrix)
         {
             res[i][j] = transpose[j][i];
         }
+        ifft(m, res[i]);
     }
 
     matrix_free(m, transpose);
@@ -227,6 +228,7 @@ double **cyclic_sift(size_t k, size_t m, double *const *const kernel)
         shifted[i] = calloc(m, sizeof(double));
     }
 
+    // The center of the kernel is at (s, s).
     size_t const s = (k - 1) / 2;
 
     for (size_t i = s; i < k; i++)
@@ -260,6 +262,8 @@ double **cyclic_sift(size_t k, size_t m, double *const *const kernel)
             shifted[m - s + i][m - s + j] = kernel[i][j];
         }
     }
+
+    return shifted;
 }
 
 void convolve_fft(
@@ -276,6 +280,8 @@ void convolve_fft(
     complex double **in_dft = fft_2d(n, m, in),
                    **kernel_dft = fft_2d(m, m, shifted_kernel);
 
+    matrix_free(m, shifted_kernel);
+
     for (size_t i = 0; i < m; i++)
     {
         for (size_t j = 0; j < m; j++)
@@ -284,6 +290,7 @@ void convolve_fft(
         }
     }
 
+    matrix_free(m, kernel_dft);
     complex double **res = ifft_2d(m, in_dft);
 
     for (size_t i = 0; i < n; i++)
