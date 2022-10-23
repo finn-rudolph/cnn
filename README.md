@@ -2,17 +2,29 @@
 
 The network consists of several convolutional layers followed by fully connected layers. A short description of the architecture and important details follows.
 
+## File Structure
+
+`main.c` contains the `main` function and is the starting point for all interaction with the network. In `network.c`, network level functions such as a feed-forward and training procedure are defined. Also reading a network from a file and saving it is handled here. `layer.c` contains layer-specific functions. There are four types of layers:
+
+- Input layer: This layer arranges an input image in a matrix.
+
+- Convolutional layers: Nodes in these layers are organized in a grid. The feed-forward operation is a convolution of the previous layers values with the layer's kernel. Learning modifies the kernel values and the bias.
+
+- Fully connected layers: These layers have a weight matrix and bias vector. Feed forward is a matrix-vector product of the previous layer's value vector with the weight matrix. Then the bias vector is added.
+
+- Flattening layer: Lies in between the convolutional and fully connected layers and flattens the convolutional layer's matrix into a vector.
+
+There is always one input layer, some number of convolutional layers, then one flattening layer and finally some number of fully connected layers. After passing the values forward to the next layer, they are piped through the activiation function, which can be specified by the user in `network_config.h`. Activation functions and their derivatives are defined in `util.h`.
+
+`convolution.c` contains the straight-forward $O(n^2)$ convolution algorithm as well as convolution via the Fast-Fourier-Transform. `image_data.c` reads in images and labels in the [MNIST format](http://yann.lecun.com/exdb/mnist/). In this file, also a function for normalizing the images is contained. Images are normalized in mini-batches, whose size is specified by `NORMALIZATION_BATCH_SIZE` in `network_config.h`.
+
 ## Data representation
 
 An image is represented as an array of size 784. The input layer converts this to a 28 times 28 two-dimensional array. Data always starts at index 0 in both dimensions. As the fully connected layers use one dimension, a flattening layer between the convolutional and fully connected layers is needed.
 
-## Control flow
-
-The control flow when performing a usual operation on the network such as training or evaluating images starts in the respective function in `network.c`. Layer-specific actions are performed in `layer.c`. Usually, the function on network level iterates over all layers and invokes layer-specific functions by layer type.
-
 ## Formulas for Gradient Descent
 
-The main equations used to implement backpropagation and gradient descent are summarized here.
+The equations used to implement backpropagation and gradient descent are summarized here.
 
 ### List of Symbols
 
