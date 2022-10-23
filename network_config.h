@@ -4,9 +4,9 @@
 // #define DEBUG_MODE 1
 #define NDEBUG 1
 
-#define ACTIVATION &vtanh
-#define ACTIVATION_D &tanh_d
-#define OUT_ACTIVATION &softmax
+#define ACTIVATION &fn_tanh
+#define ACTIVATION_D &fn_tanh_d
+#define OUT_ACTIVATION &fn_softmax
 #define OUT_ACTIVATION_D 0
 
 // #define CONV_FFT 1

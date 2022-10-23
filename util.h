@@ -227,7 +227,7 @@ static inline double **flip_kernel(size_t k, double *const *const kernel)
 typedef double (*activation_fn)(double x);
 typedef void (*vactivation_fn)(size_t n, double *const);
 
-static inline void relu(size_t n, double *const x)
+static inline void fn_relu(size_t n, double *const x)
 {
     for (size_t i = 0; i < n; i++)
     {
@@ -235,12 +235,12 @@ static inline void relu(size_t n, double *const x)
     }
 }
 
-static inline double relu_d(double x)
+static inline double fn_relu_d(double x)
 {
     return x > 0.0 ? 1.0 : 0.0;
 }
 
-static inline void relu_smooth(size_t n, double *const x)
+static inline void fn_relu_smooth(size_t n, double *const x)
 {
     for (size_t i = 0; i < n; i++)
     {
@@ -248,12 +248,12 @@ static inline void relu_smooth(size_t n, double *const x)
     }
 }
 
-static inline double relu_smooth_d(double x)
+static inline double fn_relu_smooth_d(double x)
 {
     return 1.0 / (1.0 + exp(-x));
 }
 
-static inline void sigmoid(size_t n, double *const x)
+static inline void fn_sigmoid(size_t n, double *const x)
 {
     for (size_t i = 0; i < n; i++)
     {
@@ -261,12 +261,12 @@ static inline void sigmoid(size_t n, double *const x)
     }
 }
 
-static inline double sigmoid_d(double x)
+static inline double fn_sigmoid_d(double x)
 {
     return 1.0 / (2.0 + exp(x) + exp(-x));
 }
 
-static inline void vtanh(size_t n, double *const x)
+static inline void fn_tanh(size_t n, double *const x)
 {
     for (size_t i = 0; i < n; i++)
     {
@@ -274,12 +274,12 @@ static inline void vtanh(size_t n, double *const x)
     }
 }
 
-static inline double tanh_d(double x)
+static inline double fn_tanh_d(double x)
 {
     return 4.0 / (2.0 + exp(2.0 * x) + exp(-2.0 * x));
 }
 
-static inline void softmax(size_t n, double *const x)
+static inline void fn_softmax(size_t n, double *const x)
 {
     // Subtract the maximum to avoid overflow.
     double max_val = x[0];
