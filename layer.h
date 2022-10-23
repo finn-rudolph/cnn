@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+#include "util.h"
+
 typedef enum layer_type layer_type;
 enum layer_type
 {
@@ -14,9 +16,6 @@ enum layer_type
     LTYPE_FC,
     LTYPE_FLAT
 };
-
-typedef double (*activation_fn)(double x);
-typedef void (*vactivation_fn)(size_t n, double *const);
 
 typedef struct input_layer input_layer;
 struct input_layer

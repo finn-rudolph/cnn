@@ -219,12 +219,20 @@ static inline double **flip_kernel(size_t k, double *const *const kernel)
     return flipped;
 }
 
-// Activation functions. Suffix _d means derivative. Prefix v means the function
-// uses a vector, not only a scalar.
+// Activation functions. The actual activation functions are defined for
+// vectors, while their derivatives are defined for scalars. This is useful, as
+// softmax (counting as an activation function) needs the wohle vector of
+// values.
 
-static inline double relu(double x)
+typedef double (*activation_fn)(double x);
+typedef void (*vactivation_fn)(size_t n, double *const);
+
+static inline void relu(size_t n, double *const x)
 {
-    return max(0.0, x);
+    for (size_t i = 0; i < n; i++)
+    {
+        x[i] = max(0.0, x[i]);
+    }
 }
 
 static inline double relu_d(double x)
@@ -232,25 +240,12 @@ static inline double relu_d(double x)
     return x > 0.0 ? 1.0 : 0.0;
 }
 
-static inline void vrelu(size_t n, double *const x)
+static inline void relu_smooth(size_t n, double *const x)
 {
     for (size_t i = 0; i < n; i++)
     {
-        x[i] = relu(x[i]);
+        x[i] = log1p(exp(x[i]));
     }
-}
-
-static inline void vrelu_d(size_t n, double *const x)
-{
-    for (size_t i = 0; i < n; i++)
-    {
-        x[i] = relu_d(x[i]);
-    }
-}
-
-static inline double relu_smooth(double x)
-{
-    return log1p(exp(x));
 }
 
 static inline double relu_smooth_d(double x)
@@ -258,46 +253,17 @@ static inline double relu_smooth_d(double x)
     return 1.0 / (1.0 + exp(-x));
 }
 
-static inline void vrelu_smooth(size_t n, double *const x)
+static inline void sigmoid(size_t n, double *const x)
 {
     for (size_t i = 0; i < n; i++)
     {
-        x[i] = relu_smooth(x[i]);
+        x[i] = 1.0 / (1.0 + exp(-x[i]));
     }
-}
-
-static inline void vrelu_smooth_d(size_t n, double *const x)
-{
-    for (size_t i = 0; i < n; i++)
-    {
-        x[i] = relu_smooth_d(x[i]);
-    }
-}
-
-static inline double sigmoid(double x)
-{
-    return 1.0 / (1.0 + exp(-x));
 }
 
 static inline double sigmoid_d(double x)
 {
     return 1.0 / (2.0 + exp(x) + exp(-x));
-}
-
-static inline void vsigmoid(size_t n, double *const x)
-{
-    for (size_t i = 0; i < n; i++)
-    {
-        x[i] = sigmoid(x[i]);
-    }
-}
-
-static inline void vsigmoid_d(size_t n, double *const x)
-{
-    for (size_t i = 0; i < n; i++)
-    {
-        x[i] = sigmoid_d(x[i]);
-    }
 }
 
 static inline void softmax(size_t n, double *const x)

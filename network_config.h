@@ -4,7 +4,7 @@
 // #define DEBUG_MODE 1
 #define NDEBUG 1
 
-#define ACTIVATION &vsigmoid
+#define ACTIVATION &sigmoid
 #define ACTIVATION_D &sigmoid_d
 #define OUT_ACTIVATION &softmax
 #define OUT_ACTIVATION_D 0
