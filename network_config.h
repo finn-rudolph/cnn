@@ -4,12 +4,12 @@
 // #define DEBUG_MODE 1
 #define NDEBUG 1
 
-#define ACTIVATION &sigmoid
-#define ACTIVATION_D &sigmoid_d
+#define ACTIVATION &vtanh
+#define ACTIVATION_D &tanh_d
 #define OUT_ACTIVATION &softmax
 #define OUT_ACTIVATION_D 0
 
-#define CONV_FFT 1
+// #define CONV_FFT 1
 
 #define PARAM_MIN -1.0 // Only for initializing the network.
 #define PARAM_MAX 1.0

@@ -266,6 +266,19 @@ static inline double sigmoid_d(double x)
     return 1.0 / (2.0 + exp(x) + exp(-x));
 }
 
+static inline void vtanh(size_t n, double *const x)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        x[i] = tanh(x[i]);
+    }
+}
+
+static inline double tanh_d(double x)
+{
+    return 4.0 / (2.0 + exp(2.0 * x) + exp(-2.0 * x));
+}
+
 static inline void softmax(size_t n, double *const x)
 {
     // Subtract the maximum to avoid overflow.
