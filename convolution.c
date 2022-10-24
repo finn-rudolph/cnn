@@ -150,85 +150,83 @@ void ifft(size_t n, complex double *const vector)
     }
 }
 
-// n is the size of the input matrix, target_n the size to which it shall be
-// padded. This allows passing smaller matrices without having to pad them.
-complex double **fft_2d(size_t n, size_t target_n, double *const *const matrix)
+complex double **fft_2d(
+    size_t n1, size_t n2, complex double *const *const matrix)
 {
-    complex double **transpose = malloc(target_n * sizeof(complex double *));
+    complex double **transpose = malloc(n2 * sizeof(complex double *));
 
-    for (size_t i = 0; i < target_n; i++)
+    for (size_t i = 0; i < n2; i++)
     {
-        transpose[i] = calloc(target_n, sizeof(complex double));
+        transpose[i] = malloc(n1 * sizeof(complex double));
     }
 
-    for (size_t i = 0; i < n; i++)
+    for (size_t i = 0; i < n2; i++)
     {
-        for (size_t j = 0; j < n; j++)
+        for (size_t j = 0; j < n1; j++)
         {
             transpose[i][j] = matrix[j][i];
         }
-
-        // Only doing the FFT on the nonzero rows is fine, as the result of the
-        // other rows would just be a null-vector.
-        fft(target_n, transpose[i]);
+        fft(n1, transpose[i]);
     }
 
-    complex double **res = malloc(target_n * sizeof(complex double *));
+    complex double **res = malloc(n1 * sizeof(complex double *));
 
-    for (size_t i = 0; i < target_n; i++)
+    for (size_t i = 0; i < n1; i++)
     {
-        res[i] = malloc(target_n * sizeof(complex double));
-        for (size_t j = 0; j < target_n; j++)
+        res[i] = malloc(n2 * sizeof(complex double));
+        for (size_t j = 0; j < n2; j++)
         {
             res[i][j] = transpose[j][i];
         }
-        fft(target_n, res[i]);
+        fft(n2, res[i]);
     }
 
-    matrix_free(target_n, transpose);
+    matrix_free(n2, transpose);
     return res;
 }
 
-complex double **ifft_2d(size_t n, complex double *const *const matrix)
+complex double **ifft_2d(
+    size_t n1, size_t n2, complex double *const *const matrix)
 {
-    complex double **transpose = malloc(n * sizeof(complex double *));
+    complex double **transpose = malloc(n2 * sizeof(complex double *));
 
-    for (size_t i = 0; i < n; i++)
+    for (size_t i = 0; i < n2; i++)
     {
-        transpose[i] = calloc(n, sizeof(complex double));
+        transpose[i] = malloc(n1 * sizeof(complex double));
     }
 
-    for (size_t i = 0; i < n; i++)
+    for (size_t i = 0; i < n2; i++)
     {
-        for (size_t j = 0; j < n; j++)
+        for (size_t j = 0; j < n1; j++)
         {
             transpose[i][j] = matrix[j][i];
         }
-        ifft(n, transpose[i]);
+        ifft(n1, transpose[i]);
     }
 
-    complex double **res = malloc(n * sizeof(complex double *));
+    complex double **res = malloc(n1 * sizeof(complex double *));
 
-    for (size_t i = 0; i < n; i++)
+    for (size_t i = 0; i < n1; i++)
     {
-        res[i] = malloc(n * sizeof(complex double));
-        for (size_t j = 0; j < n; j++)
+        res[i] = malloc(n2 * sizeof(complex double));
+        for (size_t j = 0; j < n2; j++)
         {
             res[i][j] = transpose[j][i];
         }
-        ifft(n, res[i]);
+        ifft(n2, res[i]);
     }
 
-    matrix_free(n, transpose);
+    matrix_free(n2, transpose);
     return res;
 }
 
-double **cyclic_sift(size_t k, size_t target_n, double *const *const kernel)
+complex double **cyclic_sift(
+    size_t k, size_t target_n, double *const *const kernel)
 {
-    double **shifted = malloc(target_n * sizeof(double *));
+    complex double **shifted = malloc(target_n * sizeof(complex double *));
     for (size_t i = 0; i < target_n; i++)
     {
-        shifted[i] = calloc(target_n, sizeof(double));
+        shifted[i] = calloc(target_n, sizeof(complex double));
     }
 
     // The center of the kernel is at (s, s).
@@ -269,19 +267,42 @@ double **cyclic_sift(size_t k, size_t target_n, double *const *const kernel)
     return shifted;
 }
 
+inline size_t next_pow2(size_t x)
+{
+    size_t lg_y = 0;
+    while (1 << lg_y < x)
+        lg_y++;
+    return 1 << lg_y;
+}
+
 // Returns the convolution of in and kernel, padded to size target_n and in
 // complex numbers. This function's purpose is avoiding code duplication in
 // convolve_fft and convolve_fft_offset.
 complex double **get_convolution(
-    size_t n, size_t target_n, size_t k, double *const *const in,
-    double *const *const kernel)
+    size_t n, size_t k, double *const *const in, double *const *const kernel)
 {
-    double **shifted_kernel = cyclic_sift(k, target_n, kernel);
+    size_t const target_n = next_pow2(n + k - 1);
 
-    complex double **in_dft = fft_2d(n, target_n, in),
+    complex double **shifted_kernel = cyclic_sift(k, target_n, kernel);
+    complex double **padded_in = malloc(target_n * sizeof(complex double *));
+
+    for (size_t i = 0; i < target_n; i++)
+    {
+        padded_in[i] = calloc(target_n, sizeof(complex double));
+    }
+    for (size_t i = 0; i < n; i++)
+    {
+        for (size_t j = 0; j < n; j++)
+        {
+            padded_in[i][j] = in[i][j];
+        }
+    }
+
+    complex double **in_dft = fft_2d(target_n, target_n, padded_in),
                    **kernel_dft = fft_2d(target_n, target_n, shifted_kernel);
 
     matrix_free(target_n, shifted_kernel);
+    matrix_free(target_n, padded_in);
 
     for (size_t i = 0; i < target_n; i++)
     {
@@ -292,7 +313,7 @@ complex double **get_convolution(
     }
 
     matrix_free(target_n, kernel_dft);
-    complex double **res = ifft_2d(target_n, in_dft);
+    complex double **res = ifft_2d(target_n, target_n, in_dft);
     matrix_free(target_n, in_dft);
 
     return res;
@@ -302,12 +323,7 @@ void convolve_fft(
     size_t n, size_t k, double *const *const in, double *const *const out,
     double *const *const kernel, bool const additive)
 {
-    size_t lg_target_n = 0;
-    while (1 << lg_target_n < n + k - 1)
-        lg_target_n++;
-    size_t target_n = 1 << lg_target_n;
-
-    complex double **res = get_convolution(n, target_n, k, in, kernel);
+    complex double **res = get_convolution(n, k, in, kernel);
 
     for (size_t i = 0; i < n; i++)
     {
@@ -320,19 +336,14 @@ void convolve_fft(
         }
     }
 
-    matrix_free(target_n, res);
+    matrix_free(next_pow2(n + k - 1), res);
 }
 
 void convolve_fft_offset(
     size_t n, size_t k, double *const *const in, double *const *const out,
     double *const *const kernel, size_t margin, bool const additive)
 {
-    size_t lg_target_n = 0;
-    while (1 << lg_target_n < n + k - 1)
-        lg_target_n++;
-    size_t target_n = 1 << lg_target_n;
-
-    complex double **res = get_convolution(n, target_n, k, in, kernel);
+    complex double **res = get_convolution(n, k, in, kernel);
     size_t const shift = (k - 1) / 2 - margin;
 
     for (size_t i = 0; i < 2 * margin + 1; i++)
@@ -346,5 +357,5 @@ void convolve_fft_offset(
         }
     }
 
-    matrix_free(target_n, res);
+    matrix_free(next_pow2(n + k - 1), res);
 }
