@@ -27,8 +27,8 @@ void input_layer_free(input_layer *const x)
 }
 
 void input_layer_pass(
-    input_layer const *const x, double *const image,
-    double *const *const out, bool store_intermed)
+    input_layer const *const x, double *const image, double *const *const out,
+    bool store_intermed)
 {
     for (size_t i = 0; i < x->n; i++)
     {
@@ -347,8 +347,8 @@ void fc_layer_free(fc_layer *const x)
 }
 
 void fc_layer_pass(
-    fc_layer const *const x, double *const in,
-    double *const out, bool store_intermed)
+    fc_layer const *const x, double *const in, double *const out,
+    bool store_intermed)
 {
     vector_mul_matrix(x->n, x->m, in, x->weight, out);
 
@@ -387,8 +387,7 @@ void fc_layer_pass(
 }
 
 void fc_layer_update_gradient(
-    fc_layer *const x, double *const prev_out,
-    double *const delta)
+    fc_layer *const x, double *const prev_out, double *const delta)
 {
     assert(x->weight_gradient && x->bias_gradient);
 
@@ -403,9 +402,8 @@ void fc_layer_update_gradient(
 }
 
 void fc_layer_backprop(
-    fc_layer const *const x, double *const prev_in,
-    activation_fn prev_fd, double *const delta,
-    double *const ndelta)
+    fc_layer const *const x, double *const prev_in, activation_fn prev_fd,
+    double *const delta, double *const ndelta)
 {
     for (size_t j = 0; j < x->m; j++)
     {

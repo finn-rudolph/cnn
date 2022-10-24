@@ -25,16 +25,13 @@ void network_train(
     uint8_t *const labels, char const *const fname);
 
 void network_print_results(
-    char const *const result_fname, size_t t,
-    double *const *const result);
+    char const *const result_fname, size_t t, double *const *const result);
 
 void network_print_accuracy(
-    size_t t, double *const *const results,
-    uint8_t *const labels);
+    size_t t, double *const *const results, uint8_t *const labels);
 
 network network_read(char const *const fname);
 
-void network_print(
-    network const *const net, char const *const fname);
+void network_print(network const *const net, char const *const fname);
 
 #endif

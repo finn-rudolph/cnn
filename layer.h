@@ -32,8 +32,8 @@ void input_layer_init_backprop(input_layer *const x);
 void input_layer_free(input_layer *const x);
 
 void input_layer_pass(
-    input_layer const *const x, double *const image,
-    double *const *const out, bool store_intermed);
+    input_layer const *const x, double *const image, double *const *const out,
+    bool store_intermed);
 
 void input_layer_read(input_layer *const x, FILE *const stream);
 
@@ -99,17 +99,15 @@ void fc_layer_reset_gradient(fc_layer *const x);
 void fc_layer_free(fc_layer *const x);
 
 void fc_layer_pass(
-    fc_layer const *const x, double *const in,
-    double *const out, bool store_intermed);
+    fc_layer const *const x, double *const in, double *const out,
+    bool store_intermed);
 
 void fc_layer_update_gradient(
-    fc_layer *const x, double *const prev_out,
-    double *const delta);
+    fc_layer *const x, double *const prev_out, double *const delta);
 
 void fc_layer_backprop(
-    fc_layer const *const x, double *const prev_in,
-    activation_fn prev_fd, double *const delta,
-    double *const ndelta);
+    fc_layer const *const x, double *const prev_in, activation_fn prev_fd,
+    double *const delta, double *const ndelta);
 
 void fc_layer_descend(fc_layer *const x, size_t t);
 

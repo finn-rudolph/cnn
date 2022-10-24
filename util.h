@@ -104,12 +104,12 @@ static inline void matrix_free_cdouble(size_t n, complex double **matrix)
              : matrix_free_cdouble)(n, matrix)
 
 static inline void matrix_copy(
-    size_t n, size_t m, double *const *const matrix,
-    double *const *const out)
+    size_t n, size_t m, double *const restrict *const src,
+    double *const restrict *const dest)
 {
     for (size_t i = 0; i < n; i++)
     {
-        memcpy(out[i], matrix[i], m * sizeof(double));
+        memcpy(dest[i], src[i], m * sizeof(double));
     }
 }
 
@@ -128,13 +128,13 @@ static inline void matrix_print(
 }
 
 static inline void matrix_add(
-    size_t n, size_t m, double *const *const matrix, double *const *const out)
+    size_t n, size_t m, double *const *const in, double *const *const out)
 {
     for (size_t i = 0; i < n; i++)
     {
         for (size_t j = 0; j < m; j++)
         {
-            out[i][j] += matrix[i][j];
+            out[i][j] += in[i][j];
         }
     }
 }
@@ -151,11 +151,11 @@ static inline void vector_print(
     fputc('\n', stream);
 }
 
-static inline void vector_add(size_t n, double *const vector, double *const out)
+static inline void vector_add(size_t n, double *const in, double *const out)
 {
     for (size_t i = 0; i < n; i++)
     {
-        out[i] += vector[i];
+        out[i] += in[i];
     }
 }
 
