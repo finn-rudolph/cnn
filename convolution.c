@@ -59,165 +59,200 @@ void convolve_offset(
     }
 }
 
-void bit_reverse(size_t n, size_t lgn, complex double *const vector)
+void bit_reverse_rows(
+    size_t n1, size_t n2, size_t lgn2, complex double *const *const matrix)
 {
-    bool swapped[n];
-    memset(swapped, 0, n * sizeof(bool));
-
-    for (size_t i = 0; i < n; i++)
-    {
-        if (!swapped[i])
-        {
-            size_t rev_i = 0;
-            for (size_t j = 0; j < lgn; j++)
-            {
-                rev_i |= (i & (1 << j) ? 1 : 0) << (lgn - j - 1);
-            }
-
-            swap(vector + i, vector + rev_i);
-            swapped[i] = 1;
-            swapped[rev_i] = 1;
-        }
-    }
-}
-
-// Computes the Discrete Fourier Transform of the input vector in place. n must
-// be a power of 2.
-void fft(size_t n, complex double *const vector)
-{
-    size_t lgn = 0;
-    while (1 << lgn < n)
-        lgn++;
-
-    assert(n == 1 << lgn);
-    bit_reverse(n, lgn, vector);
-
-    for (size_t s = 1; s <= lgn; s++)
-    {
-        size_t const m = 1 << s;
-        complex double const omega_m =
-            cexp((2.0 * M_PI * I) / (complex double)m);
-
-        for (size_t i = 0; i < n; i += m)
-        {
-            complex double omega = 1.0;
-            for (size_t j = 0; j < m / 2; j++)
-            {
-                assert(i + j + m / 2 < n);
-
-                complex double u = vector[i + j],
-                               v = omega * vector[i + j + m / 2];
-                vector[i + j] = u + v;
-                vector[i + j + m / 2] = u - v;
-                omega *= omega_m;
-            }
-        }
-    }
-}
-
-void ifft(size_t n, complex double *const vector)
-{
-    size_t lgn = 0;
-    while (1 << lgn < n)
-        lgn++;
-
-    assert(n == 1 << lgn);
-    bit_reverse(n, lgn, vector);
-
-    for (size_t s = 1; s <= lgn; s++)
-    {
-        size_t const m = 1 << s;
-        complex double const omega_m =
-            cexp((-2.0 * M_PI * I) / (complex double)m);
-
-        for (size_t i = 0; i < n; i += m)
-        {
-            complex double omega = 1.0;
-            for (size_t j = 0; j < m / 2; j++)
-            {
-                complex double u = vector[i + j],
-                               v = omega * vector[i + j + m / 2];
-                vector[i + j] = u + v;
-                vector[i + j + m / 2] = u - v;
-                omega *= omega_m;
-            }
-        }
-    }
-
-    for (size_t i = 0; i < n; i++)
-    {
-        vector[i] /= (complex double)n;
-    }
-}
-
-complex double **fft_2d(
-    size_t n1, size_t n2, complex double *const *const matrix)
-{
-    complex double **transpose = malloc(n2 * sizeof(complex double *));
-
-    for (size_t i = 0; i < n2; i++)
-    {
-        transpose[i] = malloc(n1 * sizeof(complex double));
-    }
-
-    for (size_t i = 0; i < n2; i++)
-    {
-        for (size_t j = 0; j < n1; j++)
-        {
-            transpose[i][j] = matrix[j][i];
-        }
-        fft(n1, transpose[i]);
-    }
-
-    complex double **res = malloc(n1 * sizeof(complex double *));
+    bool swapped[n1][n2];
+    memset(swapped, 0, n1 * n2 * sizeof(bool));
 
     for (size_t i = 0; i < n1; i++)
     {
-        res[i] = malloc(n2 * sizeof(complex double));
         for (size_t j = 0; j < n2; j++)
         {
-            res[i][j] = transpose[j][i];
-        }
-        fft(n2, res[i]);
-    }
+            if (!swapped[i][j])
+            {
+                size_t rev_j = 0;
+                for (size_t k = 0; k < lgn2; k++)
+                {
+                    rev_j |= (j & (1 << k) ? 1 : 0) << (lgn2 - k - 1);
+                }
 
-    matrix_free(n2, transpose);
-    return res;
+                swap(matrix[i] + j, matrix[i] + rev_j);
+                swapped[i][j] = 1;
+                swapped[i][rev_j] = 1;
+            }
+        }
+    }
 }
 
-complex double **ifft_2d(
-    size_t n1, size_t n2, complex double *const *const matrix)
+void bit_reverse_cols(
+    size_t n1, size_t lgn1, size_t n2, complex double *const *const matrix)
 {
-    complex double **transpose = malloc(n2 * sizeof(complex double *));
+    bool swapped[n1][n2];
+    memset(swapped, 0, n1 * n2 * sizeof(bool));
 
-    for (size_t i = 0; i < n2; i++)
+    for (size_t j = 0; j < n2; j++)
     {
-        transpose[i] = malloc(n1 * sizeof(complex double));
-    }
-
-    for (size_t i = 0; i < n2; i++)
-    {
-        for (size_t j = 0; j < n1; j++)
+        for (size_t i = 0; i < n1; i++)
         {
-            transpose[i][j] = matrix[j][i];
+            if (!swapped[i][j])
+            {
+                size_t rev_i = 0;
+                for (size_t k = 0; k < lgn1; k++)
+                {
+                    rev_i |= (i & (1 << k) ? 1 : 0) << (lgn1 - k - 1);
+                }
+
+                swap(matrix[i] + j, matrix[rev_i] + j);
+                swapped[i][j] = 1;
+                swapped[rev_i][j] = 1;
+            }
         }
-        ifft(n1, transpose[i]);
+    }
+}
+
+// Computes the two-dimensional discrete fourier transform in place. n1 and n2
+// must be powers of 2.
+void fft_2d(size_t n1, size_t n2, complex double *const *const matrix)
+{
+    size_t lgn1 = 0, lgn2 = 0;
+    while (1 << lgn1 < n1)
+        lgn1++;
+    while (1 << lgn2 < n2)
+        lgn2++;
+
+    assert(n1 == 1 << lgn1);
+    assert(n2 == 1 << lgn2);
+
+    bit_reverse_cols(n1, lgn1, n2, matrix);
+
+    for (size_t j = 0; j < n2; j++)
+    {
+        for (size_t s = 1; s <= lgn1; s++)
+        {
+            size_t const m = 1 << s;
+            complex double const omega_m =
+                cexp((2.0 * M_PI * I) / (complex double)m);
+
+            for (size_t i = 0; i < n1; i += m)
+            {
+                complex double omega = 1.0;
+                for (size_t k = 0; k < m / 2; k++)
+                {
+                    assert(i + k + m / 2 < n1);
+
+                    complex double u = matrix[i + k][j],
+                                   v = omega * matrix[i + k + m / 2][j];
+                    matrix[i + k][j] = u + v;
+                    matrix[i + k + m / 2][j] = u - v;
+                    omega *= omega_m;
+                }
+            }
+        }
     }
 
-    complex double **res = malloc(n1 * sizeof(complex double *));
+    bit_reverse_rows(n1, n2, lgn2, matrix);
 
     for (size_t i = 0; i < n1; i++)
     {
-        res[i] = malloc(n2 * sizeof(complex double));
-        for (size_t j = 0; j < n2; j++)
+        for (size_t s = 1; s <= lgn2; s++)
         {
-            res[i][j] = transpose[j][i];
+            size_t const m = 1 << s;
+            complex double const omega_m =
+                cexp((2.0 * M_PI * I) / (complex double)m);
+
+            for (size_t j = 0; j < n2; j += m)
+            {
+                complex double omega = 1.0;
+                for (size_t k = 0; k < m / 2; k++)
+                {
+                    assert(j + k + m / 2 < n2);
+
+                    complex double u = matrix[i][j + k],
+                                   v = omega * matrix[i][j + k + m / 2];
+                    matrix[i][j + k] = u + v;
+                    matrix[i][j + k + m / 2] = u - v;
+                    omega *= omega_m;
+                }
+            }
         }
-        ifft(n2, res[i]);
+    }
+}
+
+void ifft_2d(size_t n1, size_t n2, complex double *const *const matrix)
+{
+    size_t lgn1 = 0, lgn2 = 0;
+    while (1 << lgn1 < n1)
+        lgn1++;
+    while (1 << lgn2 < n2)
+        lgn2++;
+
+    assert(n1 == 1 << lgn1);
+    assert(n2 == 1 << lgn2);
+
+    bit_reverse_cols(n1, lgn1, n2, matrix);
+
+    for (size_t j = 0; j < n2; j++)
+    {
+        for (size_t s = 1; s <= lgn1; s++)
+        {
+            size_t const m = 1 << s;
+            complex double const omega_m =
+                cexp((-2.0 * M_PI * I) / (complex double)m);
+
+            for (size_t i = 0; i < n1; i += m)
+            {
+                complex double omega = 1.0;
+                for (size_t k = 0; k < m / 2; k++)
+                {
+                    assert(i + k + m / 2 < n1);
+
+                    complex double u = matrix[i + k][j],
+                                   v = omega * matrix[i + k + m / 2][j];
+                    matrix[i + k][j] = u + v;
+                    matrix[i + k + m / 2][j] = u - v;
+                    omega *= omega_m;
+                }
+            }
+        }
+
+        for (size_t i = 0; i < n1; i++)
+        {
+            matrix[i][j] /= (complex double)n1;
+        }
     }
 
-    matrix_free(n2, transpose);
-    return res;
+    bit_reverse_rows(n1, n2, lgn2, matrix);
+
+    for (size_t i = 0; i < n1; i++)
+    {
+        for (size_t s = 1; s <= lgn2; s++)
+        {
+            size_t const m = 1 << s;
+            complex double const omega_m =
+                cexp((-2.0 * M_PI * I) / (complex double)m);
+
+            for (size_t j = 0; j < n2; j += m)
+            {
+                complex double omega = 1.0;
+                for (size_t k = 0; k < m / 2; k++)
+                {
+                    assert(j + k + m / 2 < n2);
+
+                    complex double u = matrix[i][j + k],
+                                   v = omega * matrix[i][j + k + m / 2];
+                    matrix[i][j + k] = u + v;
+                    matrix[i][j + k + m / 2] = u - v;
+                    omega *= omega_m;
+                }
+            }
+        }
+
+        for (size_t j = 0; j < n2; j++)
+        {
+            matrix[i][j] /= (complex double)n2;
+        }
+    }
 }
 
 complex double **cyclic_sift(
@@ -276,8 +311,8 @@ inline size_t next_pow2(size_t x)
 }
 
 // Returns the convolution of in and kernel, padded to size target_n and in
-// complex numbers. This function's purpose is avoiding code duplication in
-// convolve_fft and convolve_fft_offset.
+// complex numbers. This function avoids duplication in the convolution
+// function with / without offset.
 complex double **get_convolution(
     size_t n, size_t k, double *const *const in, double *const *const kernel)
 {
@@ -298,25 +333,21 @@ complex double **get_convolution(
         }
     }
 
-    complex double **in_dft = fft_2d(target_n, target_n, padded_in),
-                   **kernel_dft = fft_2d(target_n, target_n, shifted_kernel);
-
-    matrix_free(target_n, shifted_kernel);
-    matrix_free(target_n, padded_in);
+    fft_2d(target_n, target_n, padded_in);
+    fft_2d(target_n, target_n, shifted_kernel);
 
     for (size_t i = 0; i < target_n; i++)
     {
         for (size_t j = 0; j < target_n; j++)
         {
-            in_dft[i][j] *= kernel_dft[i][j];
+            padded_in[i][j] *= shifted_kernel[i][j];
         }
     }
 
-    matrix_free(target_n, kernel_dft);
-    complex double **res = ifft_2d(target_n, target_n, in_dft);
-    matrix_free(target_n, in_dft);
+    matrix_free(target_n, shifted_kernel);
+    ifft_2d(target_n, target_n, padded_in);
 
-    return res;
+    return padded_in;
 }
 
 void convolve_fft(
