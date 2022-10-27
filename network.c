@@ -646,7 +646,8 @@ void network_train(
     }
 
     network_init_backprop(net);
-    printf("Printing unregularized cost, regularization cost in each epoch.\n");
+    printf(
+        "Printing unregularized cost and regularization cost in each epoch.\n");
 
     for (size_t e = 0; e < epochs; e++)
     {
@@ -699,7 +700,7 @@ void network_train(
 
         network_print(net, fname);
         double regularization_cost = get_regularization_cost(net, t);
-        printf("%-7lg, %-7lg\n", cost / (double)t, regularization_cost);
+        printf("%-10lg  %-10lg\n", cost / (double)t, regularization_cost);
     }
 
     free_replicas(num_threads, replicas);
