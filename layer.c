@@ -119,7 +119,7 @@ void conv_layer_free(conv_layer *const x)
 
 void conv_layer_pass(
     conv_layer const *const x, double *const *const in,
-    double *const *const out, bool store_intermed)
+    double *const *const out, bool store_result)
 {
 
 #ifdef CONV_FFT
@@ -142,7 +142,7 @@ void conv_layer_pass(
         }
     }
 
-    if (store_intermed)
+    if (store_result)
     {
         matrix_copy(x->n, x->n, out, x->in);
     }
@@ -159,7 +159,7 @@ void conv_layer_pass(
         (*x->f)(x->n, out[i]);
     }
 
-    if (store_intermed)
+    if (store_result)
     {
         matrix_copy(x->n, x->n, out, x->out);
     }
@@ -348,7 +348,7 @@ void fc_layer_free(fc_layer *const x)
 
 void fc_layer_pass(
     fc_layer const *const x, double *const in, double *const out,
-    bool store_intermed)
+    bool store_result)
 {
     vector_mul_matrix(x->n, x->m, in, x->weight, out);
 
@@ -357,7 +357,7 @@ void fc_layer_pass(
         out[i] += x->bias[i];
     }
 
-    if (store_intermed)
+    if (store_result)
     {
         memcpy(x->in, out, x->n * sizeof(double));
     }
@@ -372,7 +372,7 @@ void fc_layer_pass(
 
     (*x->f)(x->n, out);
 
-    if (store_intermed)
+    if (store_result)
     {
         memcpy(x->out, out, x->n * sizeof(double));
     }

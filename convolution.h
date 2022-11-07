@@ -4,9 +4,6 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-// All convolution functions assume, that the data starts at index 0 in both
-// dimensions and is layed out continuously.
-
 // Stores a matrix of the same size as the input matrix in out. The kernel is
 // first centered in the top left corner and cut off when necessary. k must be
 // odd.

@@ -61,7 +61,7 @@ void conv_layer_free(conv_layer *const x);
 
 void conv_layer_pass(
     conv_layer const *const x, double *const *const in,
-    double *const *const out, bool store_intermed);
+    double *const *const out, bool store_result);
 
 void conv_layer_update_gradient(
     conv_layer *const x, double *const *const prev_out,
@@ -100,7 +100,7 @@ void fc_layer_free(fc_layer *const x);
 
 void fc_layer_pass(
     fc_layer const *const x, double *const in, double *const out,
-    bool store_intermed);
+    bool store_result);
 
 void fc_layer_update_gradient(
     fc_layer *const x, double *const prev_out, double *const delta);

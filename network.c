@@ -391,11 +391,11 @@ void network_backprop(
 }
 
 // Creates duplicates and initializes separate buffers for backpropagation.
-network *replicate_net(network const *const net, size_t n)
+network *replicate_net(network const *const net, size_t num_replicas)
 {
-    network *replicas = malloc(n * sizeof(network));
+    network *replicas = malloc(num_replicas * sizeof(network));
 
-    for (size_t i = 0; i < n; i++)
+    for (size_t i = 0; i < num_replicas; i++)
     {
         network *const z = replicas + i;
         z->l = net->l;
@@ -408,11 +408,11 @@ network *replicate_net(network const *const net, size_t n)
     return replicas;
 }
 
-void free_replicas(size_t n, network *const replicas)
+void free_replicas(size_t num_replicas, network *const replicas)
 {
     // Must be done manually as the layer functions would also free the weights
     // and biases containers.
-    for (size_t i = 0; i < n; i++)
+    for (size_t i = 0; i < num_replicas; i++)
     {
         network *const z = replicas + i;
         for (size_t j = 0; j < z->l; j++)
@@ -456,11 +456,12 @@ void free_replicas(size_t n, network *const replicas)
 
 // Assumes the gradients in net are all set to 0.
 void sum_replica_gradients(
-    network const *const net, size_t n, network const *const replicas)
+    network const *const net, size_t num_replicas,
+    network const *const replicas)
 {
     assert(net->l == replicas[0].l);
 
-    for (size_t i = 0; i < n; i++)
+    for (size_t i = 0; i < num_replicas; i++)
     {
         network const *const z = replicas + i;
 
@@ -492,9 +493,10 @@ void sum_replica_gradients(
 }
 
 void update_replicas(
-    network const *const net, size_t n, network const *const replicas)
+    network const *const net, size_t num_replicas,
+    network const *const replicas)
 {
-    for (size_t i = 0; i < n; i++)
+    for (size_t i = 0; i < num_replicas; i++)
     {
         network const *const z = replicas + i;
 

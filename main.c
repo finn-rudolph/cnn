@@ -13,10 +13,13 @@ enum net_command
     NET_TRAIN,
 };
 
-// TODO: help command, more information
 _Noreturn void print_help()
 {
-    printf("Please specify an action.\n");
+    printf("Specify one of the following actions as an argument.\n"
+           "  init  : Initialize a new network with random weights and biases.\n"
+           "  eval  : Get the predictions of a network for a data set.\n"
+           "  train : Improve the performance of a network by backpropagation.\n"
+           "  test  : Record a network's accuracy on some data set.\n");
     exit(EXIT_SUCCESS);
 }
 

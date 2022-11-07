@@ -1,5 +1,5 @@
-#ifndef DATA_IO_H
-#define DATA_IO_H 1
+#ifndef IMAGE_DATA_H
+#define IMAGE_DATA_H 1
 
 #include <stdio.h>
 #include <stdint.h>
