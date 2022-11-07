@@ -11,13 +11,13 @@
 
 // #define CONV_FFT 1
 
-#define PARAM_MIN -1.0 // Only for initializing the network.
-#define PARAM_MAX 1.0
+#define PARAM_MIN -0.5 // Only for initializing the network.
+#define PARAM_MAX 0.5
 
 #define LEARN_RATE 0.1
-#define REGULARIZATION_PARAM 1.0
+#define REGULARIZATION_PARAM 0.02
 
-#define BATCH_SIZE 125 // The batch size per thread.
-#define NORMALIZATION_BATCH_SIZE 1000
+#define BATCH_SIZE 250 // The batch size per thread.
+#define NORMALIZATION_BATCH_SIZE 5000
 
 #endif

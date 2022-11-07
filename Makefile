@@ -2,7 +2,7 @@ CC = clang
 CFLAGS = -Wall -g -O3
 BINS = main.o image_data.o layer.o network.o convolution.o
 
-main: $(BINS) main.o
+all: $(BINS) main.o
 	$(CC) $(CFLAGS) $(BINS) -lm -o main
 
 %.o: %.c %.h
