@@ -1,5 +1,5 @@
 CC = clang
-CFLAGS = -Wall -g -O3
+CFLAGS = -Wall -O3 -march=native -DNDEBUG
 BINS = main.o image_data.o layer.o network.o convolution.o
 
 all: $(BINS) main.o
