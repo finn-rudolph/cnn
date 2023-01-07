@@ -258,10 +258,10 @@ void ifft_2d(size_t n1, size_t n2, complex double *const *const matrix)
 complex double **cyclic_sift(
     size_t k, size_t target_n, double *const *const kernel)
 {
-    complex double **shifted = malloc(target_n * sizeof(complex double *));
+    complex double **shifted = malloc(target_n * sizeof **shifted);
     for (size_t i = 0; i < target_n; i++)
     {
-        shifted[i] = calloc(target_n, sizeof(complex double));
+        shifted[i] = calloc(target_n, sizeof *shifted[i]);
     }
 
     // The center of the kernel is at (s, s).
@@ -319,11 +319,11 @@ complex double **get_convolution(
     size_t const target_n = next_pow2(n + k - 1);
 
     complex double **shifted_kernel = cyclic_sift(k, target_n, kernel);
-    complex double **padded_in = malloc(target_n * sizeof(complex double *));
+    complex double **padded_in = malloc(target_n * sizeof **padded_in);
 
     for (size_t i = 0; i < target_n; i++)
     {
-        padded_in[i] = calloc(target_n, sizeof(complex double));
+        padded_in[i] = calloc(target_n, *padded_in[i]);
     }
     for (size_t i = 0; i < n; i++)
     {

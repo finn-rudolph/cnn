@@ -70,10 +70,10 @@ static inline void swap_uint8(uint8_t *x, uint8_t *y)
 
 static inline double **matrix_alloc(size_t n, size_t m)
 {
-    double **matrix = malloc(n * sizeof(double *));
+    double **matrix = malloc(n * sizeof *matrix);
     for (size_t i = 0; i < n; i++)
     {
-        matrix[i] = malloc(m * sizeof(double));
+        matrix[i] = malloc(m * sizeof *matrix[i]);
     }
     return matrix;
 }
@@ -109,7 +109,7 @@ static inline void matrix_copy(
 {
     for (size_t i = 0; i < n; i++)
     {
-        memcpy(dest[i], src[i], m * sizeof(double));
+        memcpy(dest[i], src[i], m * sizeof *src[i]);
     }
 }
 
@@ -202,10 +202,10 @@ static inline void rev_uint32(uint32_t *const x)
 
 static inline double **flip_kernel(size_t k, double *const *const kernel)
 {
-    double **flipped = malloc(k * sizeof(double *));
+    double **flipped = malloc(k * sizeof *flipped);
     for (size_t i = 0; i < k; i++)
     {
-        flipped[i] = malloc(k * sizeof(double));
+        flipped[i] = malloc(k * sizeof *flipped[i]);
     }
 
     for (size_t i = 0; i < k; i++)

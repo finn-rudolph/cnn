@@ -16,7 +16,7 @@ network network_init(
 {
     network net;
     net.l = num_conv + num_fc + 2;
-    net.layers = malloc(net.l * sizeof(layer));
+    net.layers = malloc(net.l * sizeof *net.layers);
 
     input_layer_init(&net.layers[0].input, 28);
 
@@ -160,7 +160,7 @@ double *network_pass_one(
         }
     }
 
-    double *result = malloc(10 * sizeof(double));
+    double *result = malloc(10 * sizeof *result);
     memcpy(result, p, 10 * sizeof(double));
     return result;
 }
@@ -393,14 +393,14 @@ void network_backprop(
 // Creates duplicates and initializes separate buffers for backpropagation.
 network *replicate_net(network const *const net, size_t num_replicas)
 {
-    network *replicas = malloc(num_replicas * sizeof(network));
+    network *replicas = malloc(num_replicas * sizeof *replicas);
 
     for (size_t i = 0; i < num_replicas; i++)
     {
         network *const z = replicas + i;
         z->l = net->l;
-        z->layers = malloc(z->l * sizeof(layer));
-        memcpy(z->layers, net->layers, net->l * sizeof(layer));
+        z->layers = malloc(z->l * sizeof *z->layers);
+        memcpy(z->layers, net->layers, net->l * sizeof *z->layers);
 
         network_init_backprop(replicas + i);
     }
@@ -568,8 +568,8 @@ double **network_pass_forward(
 
     size_t const grid_size = 28;
 
-    double ***u = malloc(num_threads * sizeof(double **)),
-           ***v = malloc(num_threads * sizeof(double **)),
+    double ***u = malloc(num_threads * sizeof ***u),
+           ***v = malloc(num_threads * sizeof ***v),
            **p = matrix_alloc(num_threads, square(grid_size)),
            **q = matrix_alloc(num_threads, square(grid_size));
 
@@ -579,7 +579,7 @@ double **network_pass_forward(
         v[i] = matrix_alloc(grid_size, grid_size);
     }
 
-    double **results = malloc(t * sizeof(double *));
+    double **results = malloc(t * sizeof **results);
 
     for (size_t i = 0; i < t; i += num_threads * BATCH_SIZE)
     {
@@ -723,7 +723,7 @@ void network_train(
 
 uint8_t *calc_max_digits(size_t t, double *const *const results)
 {
-    uint8_t *max_digits = malloc(t * sizeof(uint8_t));
+    uint8_t *max_digits = malloc(t * sizeof *max_digits);
 
     for (size_t i = 0; i < t; i++)
     {
@@ -767,8 +767,8 @@ void network_print_accuracy(
     size_t t, double *const *const results, uint8_t *const labels)
 {
     size_t digit_correct[10], digit_occ[10];
-    memset(digit_correct, 0, 10 * sizeof(size_t));
-    memset(digit_occ, 0, 10 * sizeof(size_t));
+    memset(digit_correct, 0, 10 * sizeof *digit_correct);
+    memset(digit_occ, 0, 10 * sizeof *digit_occ);
     size_t total_correct = 0;
 
     uint8_t *max_digits = calc_max_digits(t, results);
@@ -805,7 +805,7 @@ network network_read(char const *const fname)
     }
 
     fscanf(stream, "%zu", &net.l);
-    net.layers = malloc(net.l * sizeof(layer));
+    net.layers = malloc(net.l * sizeof *net.layers);
 
     for (size_t i = 0; i < net.l; i++)
     {
