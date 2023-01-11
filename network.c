@@ -11,10 +11,10 @@
 #include "util.h"
 #include "network_config.h"
 
-network network_init(
+Network network_init(
     size_t num_conv, size_t num_fc, size_t kernel_size, size_t fc_size)
 {
-    network net;
+    Network net;
     net.l = num_conv + num_fc + 2;
     net.layers = malloc(net.l * sizeof *net.layers);
 
@@ -24,7 +24,7 @@ network network_init(
 
     for (size_t i = 1; i < num_conv + 1; i++)
     {
-        conv_layer *x = &net.layers[i].conv;
+        ConvLayer *x = &net.layers[i].conv;
         conv_layer_init(x, 28, kernel_size);
         x->bias = rand_double(CNN_PARAM_MIN, CNN_PARAM_MAX);
 
@@ -42,7 +42,7 @@ network network_init(
 
     for (size_t i = num_conv + 2; i < net.l; i++)
     {
-        fc_layer *x = &net.layers[i].fc;
+        FcLayer *x = &net.layers[i].fc;
         fc_layer_init(
             x, (i == net.l - 1) ? 10 : fc_size,
             (i == num_conv + 2) ? square(net.layers[i - 1].flat.n) : fc_size);
@@ -63,11 +63,11 @@ network network_init(
     return net;
 }
 
-void network_init_backprop(network const *const net)
+void network_init_backprop(Network const *const net)
 {
     for (size_t i = 0; i < net->l; i++)
     {
-        layer *x = net->layers + i;
+        Layer *x = net->layers + i;
         switch (x->conv.ltype)
         {
         case LTYPE_INPUT:
@@ -89,11 +89,11 @@ void network_init_backprop(network const *const net)
     }
 }
 
-void network_free(network *const net)
+void network_free(Network *const net)
 {
     for (size_t i = 0; i < net->l; i++)
     {
-        layer *x = net->layers + i;
+        Layer *x = net->layers + i;
         switch (x->conv.ltype)
         {
         case LTYPE_INPUT:
@@ -120,14 +120,14 @@ void network_free(network *const net)
 // Feeds the specified image through the network. u, v, p and q must be user
 // provided buffers large enough to store intermediate results of any layer.
 double *network_pass_one(
-    network const *const net, double *const image, double **u, double **v,
+    Network const *const net, double *const image, double **u, double **v,
     double *p, double *q, bool store_intermed)
 {
     input_layer_pass(&net->layers[0].input, image, u, store_intermed);
 
     for (size_t i = 1; i < net->l; i++)
     {
-        layer *x = net->layers + i;
+        Layer *x = net->layers + i;
         switch (x->conv.ltype)
         {
         case LTYPE_CONV:
@@ -191,12 +191,12 @@ double get_cost(double const *const result, uint8_t label)
     return -log(result[label]);
 }
 
-double get_regularization_cost(network const *const net, size_t t)
+double get_regularization_cost(Network const *const net, size_t t)
 {
     double cost = 0.0;
     for (size_t i = 0; i < net->l; i++)
     {
-        layer const *const x = net->layers + i;
+        Layer const *const x = net->layers + i;
 
         switch (x->conv.ltype)
         {
@@ -228,11 +228,11 @@ double get_regularization_cost(network const *const net, size_t t)
 }
 
 // Resets the buffers of all layers storing the accumulated gradient to 0.
-void network_reset_gradient(network const *const net)
+void network_reset_gradient(Network const *const net)
 {
     for (size_t i = 0; i < net->l; i++)
     {
-        layer *x = net->layers + i;
+        Layer *x = net->layers + i;
         switch (x->conv.ltype)
         {
         case LTYPE_CONV:
@@ -249,11 +249,11 @@ void network_reset_gradient(network const *const net)
     }
 }
 
-void network_descend(network const *const net, size_t t)
+void network_descend(Network const *const net, size_t t)
 {
     for (size_t i = 0; i < net->l; i++)
     {
-        layer *x = net->layers + i;
+        Layer *x = net->layers + i;
         switch (x->conv.ltype)
         {
         case LTYPE_CONV:
@@ -270,9 +270,9 @@ void network_descend(network const *const net, size_t t)
     }
 }
 
-double *vget_prev_in(network const *const net, size_t i)
+double *vget_prev_in(Network const *const net, size_t i)
 {
-    layer *x = net->layers + i - 1;
+    Layer *x = net->layers + i - 1;
     switch (x->conv.ltype)
     {
     case LTYPE_FC:
@@ -286,9 +286,9 @@ double *vget_prev_in(network const *const net, size_t i)
     }
 }
 
-double *vget_prev_out(network const *const net, size_t i)
+double *vget_prev_out(Network const *const net, size_t i)
 {
-    layer *x = net->layers + i - 1;
+    Layer *x = net->layers + i - 1;
     switch (x->conv.ltype)
     {
     case LTYPE_FC:
@@ -302,9 +302,9 @@ double *vget_prev_out(network const *const net, size_t i)
     }
 }
 
-double **mget_prev_in(network const *const net, size_t i)
+double **mget_prev_in(Network const *const net, size_t i)
 {
-    layer *x = net->layers + i - 1;
+    Layer *x = net->layers + i - 1;
     switch (x->conv.ltype)
     {
     case LTYPE_INPUT:
@@ -318,9 +318,9 @@ double **mget_prev_in(network const *const net, size_t i)
     }
 }
 
-double **mget_prev_out(network const *const net, size_t i)
+double **mget_prev_out(Network const *const net, size_t i)
 {
-    layer *x = net->layers + i - 1;
+    Layer *x = net->layers + i - 1;
     switch (x->conv.ltype)
     {
     case LTYPE_INPUT:
@@ -334,9 +334,9 @@ double **mget_prev_out(network const *const net, size_t i)
     }
 }
 
-activation_fn get_prev_fd(network const *const net, size_t i)
+activation_fn get_prev_fd(Network const *const net, size_t i)
 {
-    layer *x = net->layers + i - 1;
+    Layer *x = net->layers + i - 1;
     switch (x->conv.ltype)
     {
     case LTYPE_CONV:
@@ -355,11 +355,11 @@ activation_fn get_prev_fd(network const *const net, size_t i)
 
 // The delta vector of the last layer must be in the first 10 positions of p.
 void network_backprop(
-    network const *const net, double **u, double **v, double *p, double *q)
+    Network const *const net, double **u, double **v, double *p, double *q)
 {
     for (size_t i = net->l - 1; i; i--)
     {
-        layer *x = net->layers + i;
+        Layer *x = net->layers + i;
         switch (x->conv.ltype)
         {
         case LTYPE_CONV:
@@ -391,13 +391,13 @@ void network_backprop(
 }
 
 // Creates duplicates and initializes separate buffers for backpropagation.
-network *replicate_net(network const *const net, size_t num_replicas)
+Network *replicate_net(Network const *const net, size_t num_replicas)
 {
-    network *replicas = malloc(num_replicas * sizeof *replicas);
+    Network *replicas = malloc(num_replicas * sizeof *replicas);
 
     for (size_t i = 0; i < num_replicas; i++)
     {
-        network *const z = replicas + i;
+        Network *const z = replicas + i;
         z->l = net->l;
         z->layers = malloc(z->l * sizeof *z->layers);
         memcpy(z->layers, net->layers, net->l * sizeof *z->layers);
@@ -408,16 +408,16 @@ network *replicate_net(network const *const net, size_t num_replicas)
     return replicas;
 }
 
-void free_replicas(size_t num_replicas, network *const replicas)
+void free_replicas(size_t num_replicas, Network *const replicas)
 {
     // Must be done manually as the layer functions would also free the weights
     // and biases containers.
     for (size_t i = 0; i < num_replicas; i++)
     {
-        network *const z = replicas + i;
+        Network *const z = replicas + i;
         for (size_t j = 0; j < z->l; j++)
         {
-            layer *const x = z->layers + j;
+            Layer *const x = z->layers + j;
 
             switch (x->conv.ltype)
             {
@@ -456,18 +456,18 @@ void free_replicas(size_t num_replicas, network *const replicas)
 
 // Assumes the gradients in net are all set to 0.
 void sum_replica_gradients(
-    network const *const net, size_t num_replicas,
-    network const *const replicas)
+    Network const *const net, size_t num_replicas,
+    Network const *const replicas)
 {
     assert(net->l == replicas[0].l);
 
     for (size_t i = 0; i < num_replicas; i++)
     {
-        network const *const z = replicas + i;
+        Network const *const z = replicas + i;
 
         for (size_t j = 0; j < z->l; j++)
         {
-            layer *const x = z->layers + j, *const y = net->layers + j;
+            Layer *const x = z->layers + j, *const y = net->layers + j;
 
             switch (x->conv.ltype)
             {
@@ -493,16 +493,16 @@ void sum_replica_gradients(
 }
 
 void update_replicas(
-    network const *const net, size_t num_replicas,
-    network const *const replicas)
+    Network const *const net, size_t num_replicas,
+    Network const *const replicas)
 {
     for (size_t i = 0; i < num_replicas; i++)
     {
-        network const *const z = replicas + i;
+        Network const *const z = replicas + i;
 
         for (size_t j = 0; j < net->l; j++)
         {
-            layer *const x = z->layers + j, *const y = net->layers + j;
+            Layer *const x = z->layers + j, *const y = net->layers + j;
 
             switch (x->conv.ltype)
             {
@@ -520,7 +520,7 @@ void update_replicas(
 typedef struct parallel_args parallel_args;
 struct parallel_args
 {
-    network const *net;
+    Network const *net;
     size_t t;
     double **images;
     uint8_t *labels;
@@ -561,7 +561,7 @@ int pass_parallel(void *args)
 }
 
 double **network_pass_forward(
-    network const *const net, size_t t, double **const images)
+    Network const *const net, size_t t, double **const images)
 {
     size_t const num_threads = get_nprocs();
     printf("Using %zu threads.\n", num_threads);
@@ -626,13 +626,13 @@ double **network_pass_forward(
 }
 
 void network_train(
-    network const *const net, size_t epochs, size_t t, double **const images,
+    Network const *const net, size_t epochs, size_t t, double **const images,
     uint8_t *const labels, char const *const fname)
 {
     size_t const num_threads = get_nprocs();
     printf("Using %zu threads.\n", num_threads);
 
-    network *replicas = replicate_net(net, num_threads);
+    Network *replicas = replicate_net(net, num_threads);
 
     size_t const grid_size = 28;
 
@@ -793,14 +793,14 @@ void network_print_accuracy(
     free(max_digits);
 }
 
-network network_read(char const *const fname)
+Network network_read(char const *const fname)
 {
-    network net;
+    Network net;
     FILE *const stream = fopen(fname, "r");
     if (!stream)
     {
         perror("Error while reading network from file");
-        memset(&net, 0, sizeof(network));
+        memset(&net, 0, sizeof(Network));
         return net;
     }
 
@@ -809,7 +809,7 @@ network network_read(char const *const fname)
 
     for (size_t i = 0; i < net.l; i++)
     {
-        layer *x = net.layers + i;
+        Layer *x = net.layers + i;
 
         fscanf(stream, "%hhu", &x->conv.ltype);
 
@@ -840,7 +840,7 @@ network network_read(char const *const fname)
     return net;
 }
 
-void network_print(network const *const net, char const *const fname)
+void network_print(Network const *const net, char const *const fname)
 {
     FILE *stream = fopen(fname, "w");
     if (!stream)
@@ -853,7 +853,7 @@ void network_print(network const *const net, char const *const fname)
 
     for (size_t i = 0; i < net->l; i++)
     {
-        layer *x = net->layers + i;
+        Layer *x = net->layers + i;
 
         fprintf(stream, "%hhu\n", x->conv.ltype);
 

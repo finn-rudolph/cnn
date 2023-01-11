@@ -6,19 +6,19 @@
 #include "layer.h"
 #include "util.h"
 
-void input_layer_init(input_layer *const x, size_t n)
+void input_layer_init(InputLayer *const x, size_t n)
 {
     x->ltype = LTYPE_INPUT;
     x->n = n;
     x->out = 0;
 }
 
-void input_layer_init_backprop(input_layer *const x)
+void input_layer_init_backprop(InputLayer *const x)
 {
     x->out = matrix_alloc(x->n, x->n);
 }
 
-void input_layer_free(input_layer *const x)
+void input_layer_free(InputLayer *const x)
 {
     if (x->out)
     {
@@ -27,7 +27,7 @@ void input_layer_free(input_layer *const x)
 }
 
 void input_layer_pass(
-    input_layer const *const x, double *const image, double *const *const out,
+    InputLayer const *const x, double *const image, double *const *const out,
     bool store_intermed)
 {
     for (size_t i = 0; i < x->n; i++)
@@ -51,18 +51,18 @@ void input_layer_pass(
 #endif
 }
 
-void input_layer_read(input_layer *const x, FILE *const stream)
+void input_layer_read(InputLayer *const x, FILE *const stream)
 {
     fscanf(stream, "%zu", &x->n);
     input_layer_init(x, x->n);
 }
 
-void input_layer_print(input_layer const *const x, FILE *const stream)
+void input_layer_print(InputLayer const *const x, FILE *const stream)
 {
     fprintf(stream, "%zu\n\n", x->n);
 }
 
-void conv_layer_init(conv_layer *const x, size_t n, size_t k)
+void conv_layer_init(ConvLayer *const x, size_t n, size_t k)
 {
     x->ltype = LTYPE_CONV;
     x->n = n;
@@ -77,7 +77,7 @@ void conv_layer_init(conv_layer *const x, size_t n, size_t k)
     x->bias_gradient = 0.0;
 }
 
-void conv_layer_init_backprop(conv_layer *const x)
+void conv_layer_init_backprop(ConvLayer *const x)
 {
     x->in = matrix_alloc(x->n, x->n);
     x->out = matrix_alloc(x->n, x->n);
@@ -85,7 +85,7 @@ void conv_layer_init_backprop(conv_layer *const x)
     x->bias_gradient = 0.0;
 }
 
-void conv_layer_reset_gradient(conv_layer *const x)
+void conv_layer_reset_gradient(ConvLayer *const x)
 {
     assert(x->kernel_gradient);
 
@@ -99,7 +99,7 @@ void conv_layer_reset_gradient(conv_layer *const x)
     x->bias_gradient = 0.0;
 }
 
-void conv_layer_free(conv_layer *const x)
+void conv_layer_free(ConvLayer *const x)
 {
     matrix_free(x->k, x->kernel);
 
@@ -118,7 +118,7 @@ void conv_layer_free(conv_layer *const x)
 }
 
 void conv_layer_pass(
-    conv_layer const *const x, double *const *const in,
+    ConvLayer const *const x, double *const *const in,
     double *const *const out, bool store_result)
 {
 
@@ -173,7 +173,7 @@ void conv_layer_pass(
 }
 
 void conv_layer_update_gradient(
-    conv_layer *const x, double *const *const prev_out,
+    ConvLayer *const x, double *const *const prev_out,
     double *const *const delta)
 {
     assert(x->kernel_gradient);
@@ -205,7 +205,7 @@ void conv_layer_update_gradient(
 }
 
 void conv_layer_backprop(
-    conv_layer const *const x, double *const *const prev_in,
+    ConvLayer const *const x, double *const *const prev_in,
     activation_fn prev_fd, double *const *const delta,
     double *const *const ndelta)
 {
@@ -240,7 +240,7 @@ void conv_layer_backprop(
 #endif
 }
 
-void conv_layer_descend(conv_layer *const x, size_t t)
+void conv_layer_descend(ConvLayer *const x, size_t t)
 {
     assert(x->kernel_gradient);
 
@@ -265,7 +265,7 @@ void conv_layer_descend(conv_layer *const x, size_t t)
 #endif
 }
 
-void conv_layer_read(conv_layer *const x, FILE *const stream)
+void conv_layer_read(ConvLayer *const x, FILE *const stream)
 {
     fscanf(stream, "%zu %zu %lg", &x->n, &x->k, &x->bias);
     conv_layer_init(x, x->n, x->k);
@@ -279,13 +279,13 @@ void conv_layer_read(conv_layer *const x, FILE *const stream)
     }
 }
 
-void conv_layer_print(conv_layer const *const x, FILE *const stream)
+void conv_layer_print(ConvLayer const *const x, FILE *const stream)
 {
     fprintf(stream, "%zu %zu\n%lg\n", x->n, x->k, x->bias);
     matrix_print(x->k, x->k, x->kernel, stream);
 }
 
-void fc_layer_init(fc_layer *const x, size_t n, size_t m)
+void fc_layer_init(FcLayer *const x, size_t n, size_t m)
 {
     x->ltype = LTYPE_FC;
     x->n = n;
@@ -301,7 +301,7 @@ void fc_layer_init(fc_layer *const x, size_t n, size_t m)
     x->bias_gradient = 0;
 }
 
-void fc_layer_init_backprop(fc_layer *const x)
+void fc_layer_init_backprop(FcLayer *const x)
 {
     x->out = malloc(x->n * sizeof *x->out);
     x->in = malloc(x->n * sizeof *x->in);
@@ -309,7 +309,7 @@ void fc_layer_init_backprop(fc_layer *const x)
     x->bias_gradient = malloc(x->n * sizeof *x->bias_gradient);
 }
 
-void fc_layer_reset_gradient(fc_layer *const x)
+void fc_layer_reset_gradient(FcLayer *const x)
 {
     assert(x->weight_gradient && x->bias_gradient);
 
@@ -323,7 +323,7 @@ void fc_layer_reset_gradient(fc_layer *const x)
     }
 }
 
-void fc_layer_free(fc_layer *const x)
+void fc_layer_free(FcLayer *const x)
 {
     matrix_free(x->n, x->weight);
     free(x->bias);
@@ -347,7 +347,7 @@ void fc_layer_free(fc_layer *const x)
 }
 
 void fc_layer_pass(
-    fc_layer const *const x, double *const in, double *const out,
+    FcLayer const *const x, double *const in, double *const out,
     bool store_result)
 {
     vector_mul_matrix(x->n, x->m, in, x->weight, out);
@@ -387,7 +387,7 @@ void fc_layer_pass(
 }
 
 void fc_layer_update_gradient(
-    fc_layer *const x, double *const prev_out, double *const delta)
+    FcLayer *const x, double *const prev_out, double *const delta)
 {
     assert(x->weight_gradient && x->bias_gradient);
 
@@ -402,7 +402,7 @@ void fc_layer_update_gradient(
 }
 
 void fc_layer_backprop(
-    fc_layer const *const x, double *const prev_in, activation_fn prev_fd,
+    FcLayer const *const x, double *const prev_in, activation_fn prev_fd,
     double *const delta, double *const ndelta)
 {
     for (size_t j = 0; j < x->m; j++)
@@ -423,7 +423,7 @@ void fc_layer_backprop(
 #endif
 }
 
-void fc_layer_descend(fc_layer *const x, size_t t)
+void fc_layer_descend(FcLayer *const x, size_t t)
 {
     assert(x->weight_gradient && x->bias_gradient);
 
@@ -449,7 +449,7 @@ void fc_layer_descend(fc_layer *const x, size_t t)
 #endif
 }
 
-void fc_layer_read(fc_layer *const x, FILE *const stream)
+void fc_layer_read(FcLayer *const x, FILE *const stream)
 {
     fscanf(stream, "%zu %zu", &x->n, &x->m);
     fc_layer_init(x, x->n, x->m);
@@ -468,7 +468,7 @@ void fc_layer_read(fc_layer *const x, FILE *const stream)
     }
 }
 
-void fc_layer_print(fc_layer const *const x, FILE *const stream)
+void fc_layer_print(FcLayer const *const x, FILE *const stream)
 {
     fprintf(stream, "%zu %zu\n", x->n, x->m);
     matrix_print(x->n, x->m, x->weight, stream);
@@ -476,7 +476,7 @@ void fc_layer_print(fc_layer const *const x, FILE *const stream)
     fputc('\n', stream);
 }
 
-void flat_layer_init(flat_layer *const x, size_t n)
+void flat_layer_init(FlatLayer *const x, size_t n)
 {
     x->ltype = LTYPE_FLAT;
     x->n = n;
@@ -484,13 +484,13 @@ void flat_layer_init(flat_layer *const x, size_t n)
     x->out = 0;
 }
 
-void flat_layer_init_backprop(flat_layer *const x)
+void flat_layer_init_backprop(FlatLayer *const x)
 {
     x->in = malloc(square(x->n) * sizeof *x->in);
     x->out = malloc(square(x->n) * sizeof *x->in);
 }
 
-void flat_layer_free(flat_layer *const x)
+void flat_layer_free(FlatLayer *const x)
 {
     if (x->in)
     {
@@ -503,7 +503,7 @@ void flat_layer_free(flat_layer *const x)
 }
 
 void flat_layer_pass(
-    flat_layer const *const x, double *const *const in, double *const out)
+    FlatLayer const *const x, double *const *const in, double *const out)
 {
     for (size_t i = 0; i < x->n; i++)
     {
@@ -515,7 +515,7 @@ void flat_layer_pass(
 }
 
 void flat_layer_backprop(
-    flat_layer const *const x, double *const delta, double *const *const ndelta)
+    FlatLayer const *const x, double *const delta, double *const *const ndelta)
 {
     for (size_t i = 0; i < x->n; i++)
     {
@@ -526,13 +526,13 @@ void flat_layer_backprop(
     }
 }
 
-void flat_layer_read(flat_layer *const x, FILE *const stream)
+void flat_layer_read(FlatLayer *const x, FILE *const stream)
 {
     fscanf(stream, "%zu", &x->n);
     flat_layer_init(x, x->n);
 }
 
-void flat_layer_print(flat_layer const *const x, FILE *const stream)
+void flat_layer_print(FlatLayer const *const x, FILE *const stream)
 {
     fprintf(stream, "%zu\n\n", x->n);
 }

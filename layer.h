@@ -17,30 +17,30 @@ enum layer_type
     LTYPE_FLAT
 };
 
-typedef struct input_layer input_layer;
-struct input_layer
+typedef struct InputLayer InputLayer;
+struct InputLayer
 {
     uint8_t ltype;
     size_t n;
     double **out;
 };
 
-void input_layer_init(input_layer *const x, size_t n);
+void input_layer_init(InputLayer *const x, size_t n);
 
-void input_layer_init_backprop(input_layer *const x);
+void input_layer_init_backprop(InputLayer *const x);
 
-void input_layer_free(input_layer *const x);
+void input_layer_free(InputLayer *const x);
 
 void input_layer_pass(
-    input_layer const *const x, double *const image, double *const *const out,
+    InputLayer const *const x, double *const image, double *const *const out,
     bool store_intermed);
 
-void input_layer_read(input_layer *const x, FILE *const stream);
+void input_layer_read(InputLayer *const x, FILE *const stream);
 
-void input_layer_print(input_layer const *const x, FILE *const stream);
+void input_layer_print(InputLayer const *const x, FILE *const stream);
 
-typedef struct conv_layer conv_layer;
-struct conv_layer
+typedef struct ConvLayer ConvLayer;
+struct ConvLayer
 {
     uint8_t ltype;
     size_t n, k;
@@ -51,35 +51,35 @@ struct conv_layer
     double **kernel_gradient, bias_gradient;
 };
 
-void conv_layer_init(conv_layer *const x, size_t n, size_t k);
+void conv_layer_init(ConvLayer *const x, size_t n, size_t k);
 
-void conv_layer_init_backprop(conv_layer *const x);
+void conv_layer_init_backprop(ConvLayer *const x);
 
-void conv_layer_reset_gradient(conv_layer *const x);
+void conv_layer_reset_gradient(ConvLayer *const x);
 
-void conv_layer_free(conv_layer *const x);
+void conv_layer_free(ConvLayer *const x);
 
 void conv_layer_pass(
-    conv_layer const *const x, double *const *const in,
+    ConvLayer const *const x, double *const *const in,
     double *const *const out, bool store_result);
 
 void conv_layer_update_gradient(
-    conv_layer *const x, double *const *const prev_out,
+    ConvLayer *const x, double *const *const prev_out,
     double *const *const delta);
 
 void conv_layer_backprop(
-    conv_layer const *const x, double *const *const prev_in,
+    ConvLayer const *const x, double *const *const prev_in,
     activation_fn prev_fd, double *const *const delta,
     double *const *const ndelta);
 
-void conv_layer_descend(conv_layer *const x, size_t t);
+void conv_layer_descend(ConvLayer *const x, size_t t);
 
-void conv_layer_read(conv_layer *const x, FILE *const stream);
+void conv_layer_read(ConvLayer *const x, FILE *const stream);
 
-void conv_layer_print(conv_layer const *const x, FILE *const stream);
+void conv_layer_print(ConvLayer const *const x, FILE *const stream);
 
-typedef struct fc_layer fc_layer;
-struct fc_layer
+typedef struct FcLayer FcLayer;
+struct FcLayer
 {
     uint8_t ltype;
     size_t n, m;
@@ -90,63 +90,63 @@ struct fc_layer
     double **weight_gradient, *bias_gradient;
 };
 
-void fc_layer_init(fc_layer *const x, size_t n, size_t m);
+void fc_layer_init(FcLayer *const x, size_t n, size_t m);
 
-void fc_layer_init_backprop(fc_layer *const x);
+void fc_layer_init_backprop(FcLayer *const x);
 
-void fc_layer_reset_gradient(fc_layer *const x);
+void fc_layer_reset_gradient(FcLayer *const x);
 
-void fc_layer_free(fc_layer *const x);
+void fc_layer_free(FcLayer *const x);
 
 void fc_layer_pass(
-    fc_layer const *const x, double *const in, double *const out,
+    FcLayer const *const x, double *const in, double *const out,
     bool store_result);
 
 void fc_layer_update_gradient(
-    fc_layer *const x, double *const prev_out, double *const delta);
+    FcLayer *const x, double *const prev_out, double *const delta);
 
 void fc_layer_backprop(
-    fc_layer const *const x, double *const prev_in, activation_fn prev_fd,
+    FcLayer const *const x, double *const prev_in, activation_fn prev_fd,
     double *const delta, double *const ndelta);
 
-void fc_layer_descend(fc_layer *const x, size_t t);
+void fc_layer_descend(FcLayer *const x, size_t t);
 
-void fc_layer_read(fc_layer *const x, FILE *const stream);
+void fc_layer_read(FcLayer *const x, FILE *const stream);
 
-void fc_layer_print(fc_layer const *const x, FILE *const stream);
+void fc_layer_print(FcLayer const *const x, FILE *const stream);
 
-typedef struct flat_layer flat_layer;
-struct flat_layer
+typedef struct FlatLayer FlatLayer;
+struct FlatLayer
 {
     uint8_t ltype;
     size_t n;
     double *in, *out; // the previous layer's input / output, but flattened
 };
 
-void flat_layer_init(flat_layer *const x, size_t n);
+void flat_layer_init(FlatLayer *const x, size_t n);
 
-void flat_layer_init_backprop(flat_layer *const x);
+void flat_layer_init_backprop(FlatLayer *const x);
 
-void flat_layer_free(flat_layer *const x);
+void flat_layer_free(FlatLayer *const x);
 
 void flat_layer_pass(
-    flat_layer const *const x, double *const *const in, double *const out);
+    FlatLayer const *const x, double *const *const in, double *const out);
 
 void flat_layer_backprop(
-    flat_layer const *const x, double *const delta, double *const *const ndelta);
+    FlatLayer const *const x, double *const delta, double *const *const ndelta);
 
-void flat_layer_read(flat_layer *const x, FILE *const stream);
+void flat_layer_read(FlatLayer *const x, FILE *const stream);
 
 void flat_layer_print(
-    flat_layer const *const x, FILE *const stream);
+    FlatLayer const *const x, FILE *const stream);
 
-typedef union layer layer;
-union layer
+typedef union Layer Layer;
+union Layer
 {
-    input_layer input;
-    conv_layer conv;
-    fc_layer fc;
-    flat_layer flat;
+    InputLayer input;
+    ConvLayer conv;
+    FcLayer fc;
+    FlatLayer flat;
 };
 
 #endif

@@ -40,13 +40,13 @@ enum net_command get_command(int argc, char **argv)
     return command;
 }
 
-static inline network request_network()
+static inline Network request_network()
 {
     char net_fname[100];
     printf("Network file name: ");
     scanf("%s", net_fname);
 
-    network net = network_read(net_fname);
+    Network net = network_read(net_fname);
     if (!net.layers)
         exit(EXIT_FAILURE);
 
@@ -118,7 +118,7 @@ int main(int argc, char **argv)
         assert(kernel_size > 2);
         assert(fc_size >= 10);
 
-        network net = network_init(num_conv, num_fc, kernel_size, fc_size);
+        Network net = network_init(num_conv, num_fc, kernel_size, fc_size);
         network_print(&net, net_fname);
         network_free(&net);
 
@@ -126,7 +126,7 @@ int main(int argc, char **argv)
     }
     case NET_EVALUATE:
     {
-        network net = request_network();
+        Network net = request_network();
         size_t a, b;
         double **images = request_images(&a, &b);
         normalize(b - a, 28, 28, images);
@@ -146,7 +146,7 @@ int main(int argc, char **argv)
     }
     case NET_TEST:
     {
-        network net = request_network();
+        Network net = request_network();
         size_t a, b;
         double **images = request_images(&a, &b);
         normalize(b - a, 28, 28, images);
@@ -164,7 +164,7 @@ int main(int argc, char **argv)
     }
     case NET_TRAIN:
     {
-        network net = request_network();
+        Network net = request_network();
         size_t a, b;
         double **images = request_images(&a, &b);
         normalize(b - a, 28, 28, images);

@@ -5,23 +5,23 @@
 
 #include "layer.h"
 
-typedef struct network network;
-struct network
+typedef struct Network Network;
+struct Network
 {
     size_t l;
-    layer *layers;
+    Layer *layers;
 };
 
-network network_init(
+Network network_init(
     size_t num_conv, size_t num_fc, size_t kernel_size, size_t fc_size);
 
-void network_free(network *const net);
+void network_free(Network *const net);
 
 double **network_pass_forward(
-    network const *const net, size_t t, double **const images);
+    Network const *const net, size_t t, double **const images);
 
 void network_train(
-    network const *const net, size_t epochs, size_t t, double **const images,
+    Network const *const net, size_t epochs, size_t t, double **const images,
     uint8_t *const labels, char const *const fname);
 
 void network_print_results(
@@ -30,8 +30,8 @@ void network_print_results(
 void network_print_accuracy(
     size_t t, double *const *const results, uint8_t *const labels);
 
-network network_read(char const *const fname);
+Network network_read(char const *const fname);
 
-void network_print(network const *const net, char const *const fname);
+void network_print(Network const *const net, char const *const fname);
 
 #endif
