@@ -117,8 +117,9 @@ void normalize_mini(size_t t, size_t n1, size_t n2, double *const *const images)
 
 void normalize(size_t t, size_t n1, size_t n2, double *const *const images)
 {
-    for (size_t i = 0; i < t; i += NORMALIZATION_BATCH_SIZE)
+    for (size_t i = 0; i < t; i += CNN_NORMALIZATION_BATCH_SIZE)
     {
-        normalize_mini(min(NORMALIZATION_BATCH_SIZE, t - i), n1, n2, images + i);
+        normalize_mini(
+            min(CNN_NORMALIZATION_BATCH_SIZE, t - i), n1, n2, images + i);
     }
 }

@@ -26,13 +26,13 @@ network network_init(
     {
         conv_layer *x = &net.layers[i].conv;
         conv_layer_init(x, 28, kernel_size);
-        x->bias = rand_double(PARAM_MIN, PARAM_MAX);
+        x->bias = rand_double(CNN_PARAM_MIN, CNN_PARAM_MAX);
 
         for (size_t j = 0; j < x->k; j++)
         {
             for (size_t k = 0; k < x->k; k++)
             {
-                x->kernel[j][k] = rand_double(PARAM_MIN, PARAM_MAX);
+                x->kernel[j][k] = rand_double(CNN_PARAM_MIN, CNN_PARAM_MAX);
             }
         }
     }
@@ -47,16 +47,16 @@ network network_init(
             x, (i == net.l - 1) ? 10 : fc_size,
             (i == num_conv + 2) ? square(net.layers[i - 1].flat.n) : fc_size);
 
-        x->f = (i != net.l - 1) ? ACTIVATION : OUT_ACTIVATION;
-        x->fd = (i != net.l - 1) ? ACTIVATION_D : OUT_ACTIVATION_D;
+        x->f = (i != net.l - 1) ? CNN_ACTIVATION : CNN_OUT_ACTIVATION;
+        x->fd = (i != net.l - 1) ? CNN_ACTIVATION_D : CNN_OUT_ACTIVATION_D;
 
         for (size_t j = 0; j < x->n; j++)
         {
             for (size_t k = 0; k < x->m; k++)
             {
-                x->weight[j][k] = rand_double(PARAM_MIN, PARAM_MAX);
+                x->weight[j][k] = rand_double(CNN_PARAM_MIN, CNN_PARAM_MAX);
             }
-            x->bias[j] = rand_double(PARAM_MIN, PARAM_MAX);
+            x->bias[j] = rand_double(CNN_PARAM_MIN, CNN_PARAM_MAX);
         }
     }
 
@@ -224,7 +224,7 @@ double get_regularization_cost(network const *const net, size_t t)
             break;
         }
     }
-    return cost * REGULARIZATION_PARAM / (2.0 * (double)t);
+    return cost * CNN_REGULARIZATION_PARAM / (2.0 * (double)t);
 }
 
 // Resets the buffers of all layers storing the accumulated gradient to 0.
@@ -581,24 +581,24 @@ double **network_pass_forward(
 
     double **results = malloc(t * sizeof **results);
 
-    for (size_t i = 0; i < t; i += num_threads * BATCH_SIZE)
+    for (size_t i = 0; i < t; i += num_threads * CNN_BATCH_SIZE)
     {
         thrd_t threads[num_threads];
         parallel_args args[num_threads];
 
-        for (size_t j = 0; j < num_threads && i + j * BATCH_SIZE < t; j++)
+        for (size_t j = 0; j < num_threads && i + j * CNN_BATCH_SIZE < t; j++)
         {
             args[j] = (parallel_args){
                 .net = net,
-                .t = min(BATCH_SIZE, t - i - j * BATCH_SIZE),
-                .images = images + i + j * BATCH_SIZE,
+                .t = min(CNN_BATCH_SIZE, t - i - j * CNN_BATCH_SIZE),
+                .images = images + i + j * CNN_BATCH_SIZE,
                 .labels = 0,
                 .u = u[j],
                 .v = v[j],
                 .p = p[j],
                 .q = q[j],
                 .cost = 0,
-                .results = results + i + j * BATCH_SIZE,
+                .results = results + i + j * CNN_BATCH_SIZE,
                 .store_cost = 0,
                 .store_results = 1,
                 .do_backprop = 0};
@@ -606,7 +606,7 @@ double **network_pass_forward(
             thrd_create(threads + j, pass_parallel, args + j);
         }
 
-        for (size_t j = 0; j < num_threads && i + j * BATCH_SIZE < t; j++)
+        for (size_t j = 0; j < num_threads && i + j * CNN_BATCH_SIZE < t; j++)
         {
             thrd_join(threads[j], 0);
         }
@@ -656,7 +656,7 @@ void network_train(
         shuffle_images(t, images, labels);
         double cost = 0.0;
 
-        for (size_t i = 0; i < t; i += num_threads * BATCH_SIZE)
+        for (size_t i = 0; i < t; i += num_threads * CNN_BATCH_SIZE)
         {
             network_reset_gradient(net);
             for (size_t j = 0; j < num_threads; j++)
@@ -668,14 +668,14 @@ void network_train(
             thrd_t threads[num_threads];
             parallel_args args[num_threads];
 
-            for (size_t j = 0; j < num_threads && i + j * BATCH_SIZE < t; j++)
+            for (size_t j = 0; j < num_threads && i + j * CNN_BATCH_SIZE < t; j++)
             {
                 costs[j] = 0.0;
                 args[j] = (parallel_args){
                     .net = replicas + j,
-                    .t = min(BATCH_SIZE, t - i - j * BATCH_SIZE),
-                    .images = images + i + j * BATCH_SIZE,
-                    .labels = labels + i + j * BATCH_SIZE,
+                    .t = min(CNN_BATCH_SIZE, t - i - j * CNN_BATCH_SIZE),
+                    .images = images + i + j * CNN_BATCH_SIZE,
+                    .labels = labels + i + j * CNN_BATCH_SIZE,
                     .u = u[j],
                     .v = v[j],
                     .p = p[j],
@@ -689,14 +689,14 @@ void network_train(
                 thrd_create(threads + j, pass_parallel, args + j);
             }
 
-            for (size_t j = 0; j < num_threads && i + j * BATCH_SIZE < t; j++)
+            for (size_t j = 0; j < num_threads && i + j * CNN_BATCH_SIZE < t; j++)
             {
                 thrd_join(threads[j], 0);
                 cost += costs[j];
             }
 
             sum_replica_gradients(net, num_threads, replicas);
-            network_descend(net, min(BATCH_SIZE * num_threads, t - i));
+            network_descend(net, min(CNN_BATCH_SIZE * num_threads, t - i));
             update_replicas(net, num_threads, replicas);
         }
 
@@ -835,8 +835,8 @@ network network_read(char const *const fname)
         }
     }
 
-    net.layers[net.l - 1].fc.f = OUT_ACTIVATION;
-    net.layers[net.l - 1].fc.fd = OUT_ACTIVATION_D;
+    net.layers[net.l - 1].fc.f = CNN_OUT_ACTIVATION;
+    net.layers[net.l - 1].fc.fd = CNN_OUT_ACTIVATION_D;
     return net;
 }
 

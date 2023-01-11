@@ -67,8 +67,8 @@ void conv_layer_init(conv_layer *const x, size_t n, size_t k)
     x->ltype = LTYPE_CONV;
     x->n = n;
     x->k = k;
-    x->f = ACTIVATION;
-    x->fd = ACTIVATION_D;
+    x->f = CNN_ACTIVATION;
+    x->fd = CNN_ACTIVATION_D;
     x->kernel = matrix_alloc(k, k);
 
     x->in = 0;
@@ -249,12 +249,12 @@ void conv_layer_descend(conv_layer *const x, size_t t)
         for (size_t j = 0; j < x->k; j++)
         {
             x->kernel[i][j] *=
-                (1.0 - (LEARN_RATE * REGULARIZATION_PARAM) / (double)t);
+                (1.0 - (CNN_LEARN_RATE * CNN_REGULARIZATION_PARAM) / (double)t);
             x->kernel[i][j] -=
-                (x->kernel_gradient[i][j] / (double)t) * LEARN_RATE;
+                (x->kernel_gradient[i][j] / (double)t) * CNN_LEARN_RATE;
         }
     }
-    x->bias -= (x->bias_gradient / (double)t) * LEARN_RATE;
+    x->bias -= (x->bias_gradient / (double)t) * CNN_LEARN_RATE;
 
 #ifdef DEBUG_MODE
 
@@ -290,8 +290,8 @@ void fc_layer_init(fc_layer *const x, size_t n, size_t m)
     x->ltype = LTYPE_FC;
     x->n = n;
     x->m = m;
-    x->f = ACTIVATION;
-    x->fd = ACTIVATION_D;
+    x->f = CNN_ACTIVATION;
+    x->fd = CNN_ACTIVATION_D;
     x->weight = matrix_alloc(n, m);
     x->bias = malloc(n * sizeof *x->bias);
 
@@ -432,11 +432,11 @@ void fc_layer_descend(fc_layer *const x, size_t t)
         for (size_t j = 0; j < x->m; j++)
         {
             x->weight[i][j] *=
-                (1.0 - (LEARN_RATE * REGULARIZATION_PARAM) / (double)t);
+                (1.0 - (CNN_LEARN_RATE * CNN_REGULARIZATION_PARAM) / (double)t);
             x->weight[i][j] -=
-                (x->weight_gradient[i][j] / (double)t) * LEARN_RATE;
+                (x->weight_gradient[i][j] / (double)t) * CNN_LEARN_RATE;
         }
-        x->bias[i] -= (x->bias_gradient[i] / (double)t) * LEARN_RATE;
+        x->bias[i] -= (x->bias_gradient[i] / (double)t) * CNN_LEARN_RATE;
     }
 
 #ifdef DEBUG_MODE
